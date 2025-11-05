@@ -1,4 +1,4 @@
-package com.example.crosswordsai.ui.views
+package fr.univcotedazur.crosswordsai.ui.views
 
 import android.annotation.SuppressLint
 import android.content.Context

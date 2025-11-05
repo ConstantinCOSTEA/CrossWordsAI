@@ -1,4 +1,4 @@
-package com.example.crosswordsai.ui.theme
+package fr.univcotedazur.crosswordsai.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

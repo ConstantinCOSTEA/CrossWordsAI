@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.crosswordsai"
+    namespace = "fr.univcotedazur.crosswordsai"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.crosswordsai"
+        applicationId = "fr.univcotedazur.crosswordsai"
         minSdk = 29
         targetSdk = 36
         versionCode = 1

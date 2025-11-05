@@ -1,4 +1,4 @@
-package com.example.crosswordsai
+package fr.univcotedazur.crosswordsai
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,10 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.example.crosswordsai.ui.theme.CrossWordsAITheme
-import com.example.crosswordsai.ui.views.HomeView
-import com.example.crosswordsai.ui.views.PictureView
-import com.example.crosswordsai.ui.views.SettingsView
+import fr.univcotedazur.crosswordsai.ui.theme.CrossWordsAITheme
+import fr.univcotedazur.crosswordsai.ui.views.HomeView
+import fr.univcotedazur.crosswordsai.ui.views.PictureView
+import fr.univcotedazur.crosswordsai.ui.views.SettingsView
 
 /*
 Application entry point
@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
 
         // If loading data
         // splashScreen.setKeepOnScreenCondition { condition HERE }
+        //TODO : Auth0
 
         setContent {
             // Set UI Theme

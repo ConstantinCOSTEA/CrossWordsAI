@@ -1,4 +1,4 @@
-package com.example.crosswordsai.ui.views
+package fr.univcotedazur.crosswordsai.ui.views
 
 import android.Manifest
 import android.net.Uri

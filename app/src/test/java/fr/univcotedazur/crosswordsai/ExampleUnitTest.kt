@@ -1,4 +1,4 @@
-package com.example.crosswordsai
+package fr.univcotedazur.crosswordsai
 
 import org.junit.Test
 
