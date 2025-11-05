@@ -9,9 +9,13 @@ Durée : 2 semaines
 
 ## Tâches liée à une personne :
 Alexis : Veille API, Rédaction de la documentation et du compte rendu de veille
+
 Maëlla : Veille architecture, Rédaction de la documentation et du compte rendu de veille
+
 Constantin : Déploiement de la base de l'application (Architecture, Navigation, Modèles)
+
 Martin : Déploiement de la base de l'application (Écrans : Home, Picture, Settings)
+
 Valentin : Ajout du ReadMe, Rédaction de la documentation du sprint (sprint1.md)
 
 ## Description des commits :
