@@ -1,33 +1,32 @@
-Sprint [numero] — du [date]
+# Sprint [numero] — du [date]
 Durée : 2 semaines
 Équipe : 
-Scrum Master : [Nom]
-Product Owner : [Nom]
 
-Objectifs du Sprint :
+
+## Objectifs du Sprint :
 ...
 
-Tâches liée à une personne :
+## Tâches liée à une personne :
 [ ] ...
 [ ] ...
 [ ] ...
 [ ] ...
 [ ] ...
 
-Rétrospective
+## Rétrospective
 Ce qui a bien fonctionné 💪
 Bonne communication dans l’équipe
 Livrables terminés dans les temps
 
-Ce qui reste à améliorer ⚙️
+## Ce qui reste à améliorer ⚙️
 Meilleure gestion du backlog en milieu de sprint
 Clarifier les responsabilités sur certaines tâches
 
-Actions pour le prochain sprint 🚀
+## Actions pour le prochain sprint 🚀
 Planifier une revue intermédiaire
 Ajouter un point de suivi quotidien plus court
 
-💾 7. Liens utiles
+## Liens utiles
 Liens utiles
 Tableau Trello / Jira du sprint
 Pull Requests liées
