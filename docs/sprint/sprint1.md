@@ -26,22 +26,4 @@ Valentin : Ajout du ReadMe, Rédaction de la documentation du sprint (sprint1.md
     * **SettingsView :** Interface de paramètres structurée, avec gestion du thème (clair/sombre/système) et contrôles pour les futures fonctionnalités IA.
 * **Technique :** Création des modèles de données initiaux (`CrosswordPuzzle`, `AppSettings`), support **Edge-to-Edge display** et utilisation des `Previews Composable`.
 
----
-
-## Rétrospective
-Ce qui a bien fonctionné 💪
-* Bonne communication dans l’équipe
-* Livrables terminés dans les temps
-
-Ce qui reste à améliorer ⚙️
-* Meilleure gestion du backlog en milieu de sprint
-* Clarifier les responsabilités sur certaines tâches
-
-Actions pour le prochain sprint 🚀
-* Planifier une revue intermédiaire
-* Ajouter un point de suivi quotidien plus court
-
-## 💾 Liens utiles
-* Tableau Trello / Jira du sprint
-* Pull Requests liées
-* [Documentation technique](../docs/)
+-- 
