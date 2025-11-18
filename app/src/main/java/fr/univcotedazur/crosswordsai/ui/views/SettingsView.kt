@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Palette
@@ -42,7 +43,10 @@ fun SettingsView(
     // to read/write settings to persistent storage.
     // For this example, we use remember to simulate state.
     currentSettings: AppSettings = remember { AppSettings() },
-    onSettingsChange: (AppSettings) -> Unit = {} // Callback to notify parent of changes
+    onSettingsChange: (AppSettings) -> Unit = {}, // Callback to notify parent of changes
+    isLoggedIn: Boolean = false,
+    onLogin: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     // State holders for each setting, initialized from currentSettings
     var enableSound by remember { mutableStateOf(currentSettings.enableSound) }
@@ -91,6 +95,66 @@ fun SettingsView(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp) // Spacing between items
         ) {
+            item { SettingsSectionHeader(title = "Account") }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (isLoggedIn) Icons.Filled.AccountCircle else Icons.Filled.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp).padding(end = 8.dp),
+                        tint = if (isLoggedIn)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isLoggedIn) "Logged In" else "Not Logged In",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isLoggedIn)
+                                "You are currently signed in"
+                            else
+                                "Sign in to sync your data",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        if (isLoggedIn) onLogout() else onLogin()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isLoggedIn)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = if (isLoggedIn) "Sign Out" else "Sign In",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
             // MARK: - General Settings Section
             item { SettingsSectionHeader(title = "General Settings") }
 

@@ -1,3 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CrossWordsAI</string>
+    <string name="com_auth0_domain">dev-g6z37d5nyw565hvd.us.auth0.com</string>
+    <string name="com_auth0_client_id">WY7KyRyPzSoleABQXHBAdGFG35SkR4Bt</string>
+    <string name="com_auth0_scheme">demo</string>
 </resources>

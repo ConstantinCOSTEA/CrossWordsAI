@@ -41,7 +41,10 @@ data class CrosswordPuzzle(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeView(modifier: Modifier = Modifier) {
+fun HomeView(
+    modifier: Modifier = Modifier,
+    userName: String?
+) {
     val samplePuzzles = remember {
         listOf(
             CrosswordPuzzle("1", "Défi Quotidien #123", Date(), 75),
@@ -90,6 +93,16 @@ fun HomeView(modifier: Modifier = Modifier) {
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
+            userName?.let { name ->
+                Text(
+                    text = "Bonjour $name 👋",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
+                )
+            }
+
             Text(
                 text = "Vos Mots Croisés",
                 style = MaterialTheme.typography.headlineMedium,
@@ -235,7 +248,7 @@ fun CrosswordCard(
 fun PreviewHomeViewModern() {
     MaterialTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            HomeView()
+            HomeView(userName = "test")
         }
     }
 }
