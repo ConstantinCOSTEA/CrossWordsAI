@@ -1,0 +1,35 @@
+### Fichiers de Build et de Sortie (Kotlin/Gradle) ###
+/build
+.gradle
+.idea/
+/out
+/target
+
+# Fichiers de cache de l'IDE
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+### Fichiers de Configuration de l'IDE (.idea/) ###
+# IGNORE TOUT le dossier .idea/ par défaut...
+.idea/
+
+# ...sauf les fichiers essentiels pour l'uniformité du projet :
+!/.idea/misc.xml
+!/.idea/modules.xml
+!/.idea/gradle.xml
+!/.idea/compiler.xml
+!/.idea/runConfigurations/
+
+### Dépendances et Environnements Virtuels ###
+# Généralement pour les autres langages, mais bon à avoir
+/venv
+/node_modules
+
+### Fichiers de Log et de Données Temporaires ###
+*.log
+*.hprof
+/tmp
+*.zip
+*.tar.gz
