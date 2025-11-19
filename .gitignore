@@ -1,0 +1,15 @@
+### Fichiers Spécifiques aux Systèmes d'Exploitation (OS) ###
+# Mac OS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+### Fichiers de Configuration Globale et Temporaires ###
+# Utile si un développeur ouvre la racine du projet par erreur
+.idea/
+.vscode/
+
+# Logs et autres fichiers temporaires généraux
+*.log
+*~

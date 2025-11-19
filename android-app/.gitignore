@@ -1,15 +1,42 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+### Fichiers de Build et de Sortie (DOIVENT ÊTRE IGNORÉS) ###
+
+# Dossiers de sortie de compilation de Gradle
 /build
-/captures
-.externalNativeBuild
-.cxx
+.gradle
+/gen
+/out
+
+# Fichiers de configuration IDE
 local.properties
+*.iml
+
+# Fichiers de mapping et de rapport
+/app/proguard-rules.pro
+/app/consumer-rules.pro
+/lint-results.html
+/lint-results.xml
+
+# Clés de signature (TRES IMPORTANT)
+*.jks
+*.keystore
+
+### Fichiers de Configuration de l'IDE (.idea/) ###
+
+# IGNORE TOUT le dossier .idea/ par défaut...
+.idea/
+
+# ...sauf les fichiers essentiels pour l'uniformité du projet :
+!/.idea/misc.xml
+!/.idea/modules.xml
+!/.idea/gradle.xml
+!/.idea/compiler.xml
+!/.idea/runConfigurations/
+
+# Fichiers de log et de cache
+*.log
+*.hprof
+/captures
+
+### Fichiers Spécifiques aux OS ###
+.DS_Store
+Thumbs.db
