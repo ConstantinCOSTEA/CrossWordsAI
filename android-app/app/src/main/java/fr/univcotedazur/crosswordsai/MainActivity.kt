@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationException
 import com.auth0.android.provider.WebAuthProvider
 import fr.univcotedazur.crosswordsai.ui.theme.CrossWordsAITheme
+import fr.univcotedazur.crosswordsai.ui.views.CrossedWordsView
 import fr.univcotedazur.crosswordsai.ui.views.HomeView
 import fr.univcotedazur.crosswordsai.ui.views.PictureView
 import fr.univcotedazur.crosswordsai.ui.views.SettingsView
@@ -159,6 +161,7 @@ fun CrossWordsAIApp(
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
                 AppDestinations.HOME -> HomeView(Modifier.padding(innerPadding), session.userName)
+                AppDestinations.GRID -> CrossedWordsView(Modifier.padding(innerPadding))
                 AppDestinations.FAVORITES -> PictureView(Modifier.padding(innerPadding))
                 AppDestinations.PROFILE -> SettingsView(
                     modifier = Modifier.padding(innerPadding),
@@ -177,6 +180,7 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
+    GRID("Grille", Icons.Default.GridView),
     FAVORITES("Camera", Icons.Default.Add),
     PROFILE("Settings", Icons.Default.Settings),
 }

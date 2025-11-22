@@ -1,22 +1,25 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.1"
 auth0 = "3.10.0"
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 kotlinxCoroutinesAndroid = "1.10.2"
-lifecycleRuntimeKtx = "2.9.4"
-activityCompose = "1.11.0"
-composeBom = "2025.10.00"
+kotlinxSerializationJson = "1.9.0"
+lifecycleRuntimeKtx = "2.10.0"
+activityCompose = "1.12.0"
+composeBom = "2025.11.01"
 camerax = "1.5.1"
 accompanistPermissions = "0.37.3"
-materialIconsExtended = "1.6.8"
-androidx-core-splashscreen = "1.0.1"
+lifecycleViewmodelCompose = "2.10.0"
+materialIconsExtended = "1.7.8"
+androidx-core-splashscreen = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 auth0 = { module = "com.auth0.android:auth0", version.ref = "auth0" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -52,9 +55,11 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.7.0" 
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "androidx-core-splashscreen" }
 jwt = { module = "com.auth0.android:jwt", version.ref = "auth0" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

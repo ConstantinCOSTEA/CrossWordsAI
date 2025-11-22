@@ -1,0 +1,29 @@
+{
+  "words": [
+    {
+      "number": 1,
+      "direction": "vertical",
+      "answer": "ECHO"
+    },
+    {
+      "number": 1,
+      "direction": "horizontal",
+      "answer": "ETAN"
+    },
+    {
+      "number": 2,
+      "direction": "vertical",
+      "answer": "TAUDI"
+    },
+    {
+      "number": 3,
+      "direction": "horizontal",
+      "answer": "OPINEL"
+    },
+    {
+      "number": 4,
+      "direction": "vertical",
+      "answer": "ÉLU"
+    }
+  ]
+}
