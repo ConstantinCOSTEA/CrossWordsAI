@@ -1,15 +1,55 @@
-### Fichiers Spécifiques aux Systèmes d'Exploitation (OS) ###
-# Mac OS
-.DS_Store
+# ==========================================
+# .gitignore RACINE - CrosswordsAI Monorepo
+# ==========================================
 
-# Windows
-Thumbs.db
-
-### Fichiers de Configuration Globale et Temporaires ###
-# Utile si un développeur ouvre la racine du projet par erreur
+# ===== IDE / Éditeurs =====
 .idea/
 .vscode/
-
-# Logs et autres fichiers temporaires généraux
-*.log
+*.swp
+*.swo
 *~
+.DS_Store
+Thumbs.db
+
+# ===== Secrets & Config =====
+*.env
+.env.local
+.env.production
+secrets/
+*.key
+*.pem
+config/local.properties
+
+# ===== Logs =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Build artifacts généraux =====
+build/
+dist/
+out/
+target/
+
+# ===== Dépendances =====
+node_modules/
+.pnp/
+.pnp.js
+
+# ===== OS =====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===== Divers =====
+*.bak
+*.tmp
+*.temp
+.cache/

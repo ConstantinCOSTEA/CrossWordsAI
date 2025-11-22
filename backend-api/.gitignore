@@ -1,0 +1,87 @@
+# ==========================================
+# .gitignore BACKEND-API (Ktor)
+# ==========================================
+
+# ===== Gradle =====
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# ===== Kotlin / JVM =====
+*.class
+*.jar
+*.war
+*.ear
+*.kotlin_module
+out/
+target/
+
+# ===== IntelliJ IDEA =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+
+# ===== Ktor specific =====
+ktor-server.log
+application.log
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+data/
+database/
+
+# ===== Secrets & Config =====
+*.env
+.env.local
+.env.production
+application-local.conf
+application-secret.conf
+secrets/
+*.key
+*.pem
+
+# ===== Uploads / Temp =====
+uploads/
+temp/
+tmp/
+cache/
+
+# ===== Logs =====
+logs/
+*.log
+log/
+
+# ===== Testing =====
+.kotlintest/
+test-results/
+test-output/
+
+# ===== Coverage =====
+coverage/
+*.exec
+.jacoco/
+
+# ===== Docker =====
+*.env.docker
+docker-compose.override.yml
+
+# ===== MacOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ===== Windows =====
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===== Linux =====
+*~
+.directory
