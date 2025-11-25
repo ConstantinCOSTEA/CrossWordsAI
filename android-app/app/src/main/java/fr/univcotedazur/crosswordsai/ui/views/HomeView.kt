@@ -67,7 +67,7 @@ fun HomeView(
                         color = MaterialTheme.colorScheme.primary
                     )
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors( // Utiliser centerAlignedTopAppBarColors pour TopAppBar
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
@@ -187,14 +187,14 @@ fun CrosswordCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             LinearProgressIndicator(
-                progress = puzzle.progress / 100f,
+                progress = { puzzle.progress / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap, // Ajoutez strokeCap ici
+                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
             )
             Text(
                 text = "${puzzle.progress}% terminé",
