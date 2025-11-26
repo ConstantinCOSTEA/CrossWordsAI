@@ -1,71 +1,19 @@
 {
-  "words": [
-    {
-      "number": 1,
-      "size": 4,
-      "direction": "vertical",
-      "crossings": [
-        {
-          "position": 4,
-          "crossingWordNumber": 3
-        }
-      ]
-    },
-    {
-      "number": 1,
-      "size": 4,
-      "direction": "horizontal",
-      "crossings": [
-        {
-          "position": 3,
-          "crossingWordNumber": 2
-        }
-      ]
-    },
-    {
-      "number": 2,
-      "size": 5,
-      "direction": "vertical",
-      "crossings": [
-        {
-          "position": 2,
-          "crossingWordNumber": 1
-        },
-        {
-          "position": 5,
-          "crossingWordNumber": 3
-        }
-      ]
-    },
-    {
-      "number": 3,
-      "size": 6,
-      "direction": "horizontal",
-      "crossings": [
-        {
-          "position": 1,
-          "crossingWordNumber": 1
-        },
-        {
-          "position": 3,
-          "crossingWordNumber": 2
-        },
-        {
-          "position": 6,
-          "crossingWordNumber": 4
-        }
-      ]
-    },
-    {
-      "number": 4,
-      "size": 3,
-      "direction": "vertical",
-      "crossings": [
-        {
-          "position": 2,
-          "crossingWordNumber": 3
-        }
-      ]
-    }
+  "height": 12,
+  "width": 8,
+  "x": "letters",
+  "y": "numbers",
+  "blackCells": [
+    { "x": 2, "y": 3},
+    { "x": 5, "y": 3},
+    { "x": 6, "y": 4 },
+    { "x": 8, "y": 5 },
+    { "x": 3, "y": 6 },
+    { "x": 2, "y": 7},
+    { "x": 4, "y": 8 },
+    { "x": 6, "y": 9 },
+    { "x": 5, "y": 10 },
+    { "x": 2, "y": 11 },
+    { "x": 4, "y": 12 }
   ]
 }

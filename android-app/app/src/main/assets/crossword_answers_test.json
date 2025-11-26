@@ -2,28 +2,219 @@
   "words": [
     {
       "number": 1,
-      "direction": "vertical",
-      "answer": "ECHO"
-    },
-    {
-      "number": 1,
+      "order": 1,
       "direction": "horizontal",
-      "answer": "ETAN"
+      "answer": "URGENTES"
     },
     {
       "number": 2,
-      "direction": "vertical",
-      "answer": "TAUDI"
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "SAOPAULO"
     },
     {
       "number": 3,
+      "order": 1,
       "direction": "horizontal",
-      "answer": "OPINEL"
+      "answer": "NU"
+    },
+    {
+      "number": 3,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "BEN"
     },
     {
       "number": 4,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "FRERE"
+    },
+    {
+      "number": 4,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "MO"
+    },
+    {
+      "number": 5,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "RASANTE"
+    },
+    {
+      "number": 6,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "UT"
+    },
+    {
+      "number": 6,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "ICONE"
+    },
+    {
+      "number": 7,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "ATOUTS"
+    },
+    {
+      "number": 8,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "TAC"
+    },
+    {
+      "number": 8,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "DRAP"
+    },
+    {
+      "number": 9,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "ILOTE"
+    },
+    {
+      "number": 9,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "IO"
+    },
+    {
+      "number": 10,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "EIRE"
+    },
+    {
+      "number": 10,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "TRI"
+    },
+    {
+      "number": 11,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "ETRIER"
+    },
+    {
+      "number": 12,
+      "order": 1,
+      "direction": "horizontal",
+      "answer": "ENS"
+    },
+    {
+      "number": 12,
+      "order": 2,
+      "direction": "horizontal",
+      "answer": "URSS"
+    },
+    {
+      "number": 1,
+      "order": 1,
       "direction": "vertical",
-      "answer": "ÉLU"
+      "answer": "USUFRUITIERE"
+    },
+    {
+      "number": 2,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "RA"
+    },
+    {
+      "number": 2,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "RAT"
+    },
+    {
+      "number": 2,
+      "order": 3,
+      "direction": "vertical",
+      "answer": "ALI"
+    },
+    {
+      "number": 3,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "GONES"
+    },
+    {
+      "number": 3,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "ACORES"
+    },
+    {
+      "number": 4,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "EPURAIT"
+    },
+    {
+      "number": 4,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "TET"
+    },
+    {
+      "number": 5,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "NA"
+    },
+    {
+      "number": 5,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "ENCODE"
+    },
+    {
+      "number": 5,
+      "order": 3,
+      "direction": "vertical",
+      "answer": "RU"
+    },
+    {
+      "number": 6,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "TUB"
+    },
+    {
+      "number": 6,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "TOUR"
+    },
+    {
+      "number": 6,
+      "order": 3,
+      "direction": "vertical",
+      "answer": "TIR"
+    },
+    {
+      "number": 7,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "ELEMENTAIRES"
+    },
+    {
+      "number": 8,
+      "order": 1,
+      "direction": "vertical",
+      "answer": "SONO"
+    },
+    {
+      "number": 8,
+      "order": 2,
+      "direction": "vertical",
+      "answer": "ESPOIRS"
     }
   ]
 }

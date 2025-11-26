@@ -17,6 +17,18 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
     private val _gridState = MutableStateFlow<List<GridCell>>(emptyList())
     val gridState = _gridState.asStateFlow()
 
+    private val _gridWidth = MutableStateFlow(0)
+    val gridWidth = _gridWidth.asStateFlow()
+
+    private val _gridHeight = MutableStateFlow(0)
+    val gridHeight = _gridHeight.asStateFlow()
+
+    private val _xAxisType = MutableStateFlow("")
+    val xAxisType = _xAxisType.asStateFlow()
+
+    private val _yAxisType = MutableStateFlow("")
+    val yAxisType = _yAxisType.asStateFlow()
+
     private val engine = CrosswordLayoutEngine()
 
     // Instance Json réutilisable
@@ -49,6 +61,12 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
 
                 val data = json.decodeFromString<CrosswordData>(jsonString)
                 crosswordData = data
+
+                // Définir les métadonnées de la grille pour l'UI
+                _gridWidth.value = data.width
+                _gridHeight.value = data.height
+                _xAxisType.value = data.x
+                _yAxisType.value = data.y
 
                 val cells = engine.generateGrid(data)
                 _gridState.value = cells
@@ -86,20 +104,24 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
     /**
      * Remplit un mot dans la grille avec la réponse fournie
      * @param number Le numéro du mot
+     * @param order L'ordre du mot sur sa ligne/colonne (1er, 2ème, 3ème...)
      * @param direction "horizontal" ou "vertical"
      * @param answer La réponse (ex: "AGNEAU")
      */
-    fun fillWord(number: Int, direction: String, answer: String) {
+    fun fillWord(number: Int, order: Int, direction: String, answer: String) {
         val data = crosswordData ?: run {
             println("⚠️ Grille non chargée")
             return
         }
 
+        // Récupérer les mots auto-détectés depuis le moteur
+        val detectedWords = engine.getDetectedWords(data)
+        
         // Trouve le mot correspondant
-        val word = data.words.find {
-            it.number == number && it.direction == direction
+        val word = detectedWords.find {
+            it.number == number && it.order == order && it.direction == direction
         } ?: run {
-            println("⚠️ Mot $number $direction introuvable")
+            println("⚠️ Mot $number (ordre:$order) $direction introuvable")
             return
         }
 
@@ -135,7 +157,7 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         _gridState.value = updatedCells
-        println("✅ Mot $number $direction rempli: $answer")
+        println("✅ Mot $number (ordre:$order) $direction rempli: $answer")
     }
 
     /**
@@ -147,7 +169,7 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
                 val response = json.decodeFromString<WordAnswersResponse>(jsonResponse)
 
                 response.words.forEach { wordAnswer ->
-                    fillWord(wordAnswer.number, wordAnswer.direction, wordAnswer.answer)
+                    fillWord(wordAnswer.number, wordAnswer.order, wordAnswer.direction, wordAnswer.answer)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
