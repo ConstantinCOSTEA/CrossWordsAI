@@ -73,10 +73,6 @@ fun CrossedWordsContent(
 ) {
     if (cells.isNotEmpty() && gridWidth > 0 && gridHeight > 0) {
         val backgroundColor = Color(0xFFF0F4F8)
-        
-        // Taille de cellule de base (en dp)
-        val baseCellSize = 60.dp
-        val labelSize = 32.dp
 
         BoxWithConstraints(
             modifier = modifier
@@ -85,6 +81,18 @@ fun CrossedWordsContent(
         ) {
             val density = LocalDensity.current
             val paddingDp = 16.dp
+            val labelSize = 32.dp
+            
+            // Calculer la taille de cellule optimale pour que toute la grille soit visible
+            // On laisse de la marge (80%) pour être sûr que tout rentre
+            val availableWidth = maxWidth - labelSize - paddingDp * 2
+            val availableHeight = maxHeight - labelSize - paddingDp * 2
+            
+            val maxCellWidth = availableWidth / gridWidth * 0.8f
+            val maxCellHeight = availableHeight / gridHeight * 0.8f
+            
+            // Prendre la plus petite des deux pour que tout rentre, avec un max de 60dp
+            val baseCellSize = minOf(maxCellWidth, maxCellHeight, 60.dp)
             
             // Calculer la taille initiale de la grille avec labels (en dp)
             val initialGridWidthDp = labelSize + baseCellSize * gridWidth
