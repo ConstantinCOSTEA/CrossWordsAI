@@ -16,10 +16,14 @@ https://docs.koog.ai - Gestion et orchestration du LLM et des clients
 WebSocket - Envoi progressif des mots résolus au client
 
 ## Équipe de développement
-•	Alexis
-•	Maëlla
-•	Constantin
-•	Martin
-•	Valentin
+•	Alexis @(https://github.com/Askenet)
+
+•	Maëlla @(https://github.com/maellabcd)
+
+•	Constantin @(https://github.com/ConstantinCOSTEA)
+
+•	Martin @(https://github.com/LywenBG)
+
+•	Valentin @(https://github.com/Frosperino)
 
 
