@@ -13,7 +13,7 @@ Maëlla : travaille sur la logique algorithmique côté back-end en développant
 
 Constantin : co-développe l'affichage de la grille vide et mène les recherches techniques sur l'architecture de communication pour envoyer les données au serveur.
 
-Martin : intègre l'API Auth0 pour gérer l'authentification des utilisateurs.
+Martin : implémente la génération et le remplissage graphique de la grille (via JSON) et teste les différents modèles d'IA (Gemini, Ollama) pour le moteur de résolution.
 
 Valentin : ouvre les issues nécessaires et met à jour le fichier Sprint.md ainsi que le Readme.
 
