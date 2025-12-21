@@ -1,6 +1,5 @@
 package fr.univcotedazur.crosswordsai.engine
 
-import fr.univcotedazur.crosswordsai.data.model.BlackCell
 import fr.univcotedazur.crosswordsai.data.model.CrosswordData
 import fr.univcotedazur.crosswordsai.data.model.GridCell
 import fr.univcotedazur.crosswordsai.data.model.WordDefinition
