@@ -51,7 +51,7 @@ fun CrossedWordsView(
     val gridHeight by viewModel.gridHeight.collectAsState()
     val xAxisType by viewModel.xAxisType.collectAsState()
     val yAxisType by viewModel.yAxisType.collectAsState()
-    
+
     CrossedWordsContent(
         cells = cells,
         gridWidth = gridWidth,
@@ -72,121 +72,14 @@ fun CrossedWordsContent(
     modifier: Modifier = Modifier
 ) {
     if (cells.isNotEmpty() && gridWidth > 0 && gridHeight > 0) {
-        val backgroundColor = Color(0xFFF0F4F8)
-
-        BoxWithConstraints(
+        CrossedWordsGrid(
+            cells = cells,
+            gridWidth = gridWidth,
+            gridHeight = gridHeight,
+            xAxisType = xAxisType,
+            yAxisType = yAxisType,
             modifier = modifier
-                .fillMaxSize()
-                .background(backgroundColor)
-        ) {
-            val density = LocalDensity.current
-            val paddingDp = 16.dp
-            val labelSize = 32.dp
-            
-            // Calculer la taille de cellule optimale pour que toute la grille soit visible
-            // On laisse de la marge (80%) pour être sûr que tout rentre
-            val availableWidth = maxWidth - labelSize - paddingDp * 2
-            val availableHeight = maxHeight - labelSize - paddingDp * 2
-            
-            val maxCellWidth = availableWidth / gridWidth * 0.8f
-            val maxCellHeight = availableHeight / gridHeight * 0.8f
-            
-            // Prendre la plus petite des deux pour que tout rentre, avec un max de 60dp
-            val baseCellSize = minOf(maxCellWidth, maxCellHeight, 60.dp)
-            
-            // Calculer la taille initiale de la grille avec labels (en dp)
-            val initialGridWidthDp = labelSize + baseCellSize * gridWidth
-            val initialGridHeightDp = labelSize + baseCellSize * gridHeight
-            
-            // Calculer l'offset pour centrer la grille (en pixels)
-            // On soustrait le padding car il sera ajouté dans le Column
-            val initialOffsetX = with(density) { 
-                ((maxWidth - initialGridWidthDp - paddingDp * 2) / 2).toPx() 
-            }
-            val initialOffsetY = with(density) { 
-                ((maxHeight - initialGridHeightDp - paddingDp * 2) / 2).toPx() 
-            }
-            
-            // État pour le zoom et le déplacement
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offsetX by remember { mutableFloatStateOf(initialOffsetX) }
-            var offsetY by remember { mutableFloatStateOf(initialOffsetY) }
-            
-            val state = rememberTransformableState { zoomChange, panChange, _ ->
-                scale = (scale * zoomChange).coerceIn(0.5f, 3f)
-                offsetX += panChange.x
-                offsetY += panChange.y
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .transformable(state = state)
-            ) {
-                // Conteneur avec labels + grille
-                Column(
-                    modifier = Modifier
-                        .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                        .padding(paddingDp)
-                ) {
-                    // Labels de l'axe X (en haut)
-                    Row {
-                        // Espace pour aligner avec la grille
-                        Box(modifier = Modifier.size(labelSize))
-                        
-                        // Labels X
-                        for (i in 1..gridWidth) {
-                            val label = if (xAxisType == "numbers") i.toString() else ('A' + i - 1).toString()
-                            Box(
-                                modifier = Modifier.size(baseCellSize * scale),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    fontSize = (14 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.DarkGray,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Ligne de grille avec labels Y
-                    Row {
-                        // Labels de l'axe Y (à gauche)
-                        Column {
-                            for (i in 1..gridHeight) {
-                                val label = if (yAxisType == "numbers") i.toString() else ('A' + i - 1).toString()
-                                Box(
-                                    modifier = Modifier.size(labelSize, baseCellSize * scale),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        fontSize = (14 * scale).sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.DarkGray
-                                    )
-                                }
-                            }
-                        }
-                        
-                        // La grille
-                        GridCanvas(
-                            cells = cells,
-                            gridWidth = gridWidth,
-                            gridHeight = gridHeight,
-                            cellSize = baseCellSize * scale,
-                            modifier = Modifier.size(
-                                baseCellSize * gridWidth * scale,
-                                baseCellSize * gridHeight * scale
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        )
     } else {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Chargement...", style = MaterialTheme.typography.bodyLarge)
@@ -195,10 +88,187 @@ fun CrossedWordsContent(
 }
 
 @Composable
-fun GridCanvas(
+private fun CrossedWordsGrid(
     cells: List<GridCell>,
     gridWidth: Int,
     gridHeight: Int,
+    xAxisType: String,
+    yAxisType: String,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = Color(0xFFF0F4F8)
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
+        GridWithConstraints(
+            cells = cells,
+            gridWidth = gridWidth,
+            gridHeight = gridHeight,
+            xAxisType = xAxisType,
+            yAxisType = yAxisType,
+            maxWidth = maxWidth,
+            maxHeight = maxHeight
+        )
+    }
+}
+
+@Composable
+private fun GridWithConstraints(
+    cells: List<GridCell>,
+    gridWidth: Int,
+    gridHeight: Int,
+    xAxisType: String,
+    yAxisType: String,
+    maxWidth: androidx.compose.ui.unit.Dp,
+    maxHeight: androidx.compose.ui.unit.Dp
+) {
+    val density = LocalDensity.current
+    val paddingDp = 16.dp
+    val labelSize = 32.dp
+
+    // Calculer la taille de cellule optimale pour que toute la grille soit visible
+    // On laisse de la marge (80%) pour être sûr que tout rentre
+    val availableWidth = maxWidth - labelSize - paddingDp * 2
+    val availableHeight = maxHeight - labelSize - paddingDp * 2
+
+    val maxCellWidth = availableWidth / gridWidth * 0.8f
+    val maxCellHeight = availableHeight / gridHeight * 0.8f
+
+    // Prendre la plus petite des deux pour que tout rentre, avec un max de 60dp
+    val baseCellSize = minOf(maxCellWidth, maxCellHeight, 60.dp)
+
+    // Calculer la taille initiale de la grille avec labels (en dp)
+    val initialGridWidthDp = labelSize + baseCellSize * gridWidth
+    val initialGridHeightDp = labelSize + baseCellSize * gridHeight
+
+    // Calculer l'offset pour centrer la grille (en pixels)
+    // On soustrait le padding car il sera ajouté dans le Column
+    val initialOffsetX = with(density) {
+        ((maxWidth - initialGridWidthDp - paddingDp * 2) / 2).toPx()
+    }
+    val initialOffsetY = with(density) {
+        ((maxHeight - initialGridHeightDp - paddingDp * 2) / 2).toPx()
+    }
+
+    // État pour le zoom et le déplacement
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offsetX by remember { mutableFloatStateOf(initialOffsetX) }
+    var offsetY by remember { mutableFloatStateOf(initialOffsetY) }
+
+    val state = rememberTransformableState { zoomChange, panChange, _ ->
+        scale = (scale * zoomChange).coerceIn(0.5f, 3f)
+        offsetX += panChange.x
+        offsetY += panChange.y
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .transformable(state = state)
+    ) {
+        // Conteneur avec labels + grille
+        Column(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .padding(paddingDp)
+        ) {
+            // Labels de l'axe X (en haut)
+            XAxisLabels(
+                gridWidth = gridWidth,
+                xAxisType = xAxisType,
+                labelSize = labelSize,
+                cellSize = baseCellSize,
+                scale = scale
+            )
+
+            // Ligne de grille avec labels Y
+            Row {
+                // Labels de l'axe Y (à gauche)
+                YAxisLabels(
+                    gridHeight = gridHeight,
+                    yAxisType = yAxisType,
+                    labelSize = labelSize,
+                    cellSize = baseCellSize,
+                    scale = scale
+                )
+
+                // La grille
+                GridCanvas(
+                    cells = cells,
+                    cellSize = baseCellSize * scale,
+                    modifier = Modifier.size(
+                        baseCellSize * gridWidth * scale,
+                        baseCellSize * gridHeight * scale
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun XAxisLabels(
+    gridWidth: Int,
+    xAxisType: String,
+    labelSize: androidx.compose.ui.unit.Dp,
+    cellSize: androidx.compose.ui.unit.Dp,
+    scale: Float
+) {
+    Row {
+        // Espace pour aligner avec la grille
+        Box(modifier = Modifier.size(labelSize))
+
+        // Labels X
+        for (i in 1..gridWidth) {
+            val label = if (xAxisType == "numbers") i.toString() else ('A' + i - 1).toString()
+            Box(
+                modifier = Modifier.size(cellSize * scale),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    fontSize = (14 * scale).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun YAxisLabels(
+    gridHeight: Int,
+    yAxisType: String,
+    labelSize: androidx.compose.ui.unit.Dp,
+    cellSize: androidx.compose.ui.unit.Dp,
+    scale: Float
+) {
+    Column {
+        for (i in 1..gridHeight) {
+            val label = if (yAxisType == "numbers") i.toString() else ('A' + i - 1).toString()
+            Box(
+                modifier = Modifier.size(labelSize, cellSize * scale),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    fontSize = (14 * scale).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun GridCanvas(
+    cells: List<GridCell>,
     cellSize: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
