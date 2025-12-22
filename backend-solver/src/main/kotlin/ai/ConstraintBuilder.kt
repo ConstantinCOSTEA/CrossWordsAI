@@ -1,6 +1,6 @@
-package fr.univcotedazur.ai
+package fr.miage.m1.ai
 
-import fr.univcotedazur.model.Word
+import fr.miage.m1.model.Word
 
 /**
  * Constructeur de prompts enrichis pour l'IA basé sur les contraintes

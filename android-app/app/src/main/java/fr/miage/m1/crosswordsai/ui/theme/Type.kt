@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai.ui.theme
+package fr.miage.m1.crosswordsai.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

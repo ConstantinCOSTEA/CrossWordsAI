@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai.data.model
+package fr.miage.m1.crosswordsai.data.model
 
 import kotlinx.serialization.Serializable
 

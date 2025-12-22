@@ -1,4 +1,4 @@
-package com.routes
+package fr.miage.m1.routes
 
 import io.ktor.server.response.*
 import io.ktor.server.routing.*

@@ -1,6 +1,6 @@
-package com.controllers.grid
+package fr.miage.m1.controllers.grid
 
-import com.schemas.*
+import fr.miage.m1.schemas.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*

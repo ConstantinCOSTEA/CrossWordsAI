@@ -1,4 +1,4 @@
-package fr.univcotedazur.model
+package fr.miage.m1.model
 
 /**
  * Représente une case de la grille de mots croisés

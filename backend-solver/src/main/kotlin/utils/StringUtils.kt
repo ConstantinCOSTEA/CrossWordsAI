@@ -1,4 +1,4 @@
-package fr.univcotedazur.utils
+package fr.miage.m1.utils
 
 import java.text.Normalizer
 

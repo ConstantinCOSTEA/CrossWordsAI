@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai
+package fr.miage.m1.crosswordsai
 
 import org.junit.Test
 

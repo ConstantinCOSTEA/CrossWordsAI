@@ -1,8 +1,8 @@
-package fr.univcotedazur.crosswordsai.engine
+package fr.miage.m1.crosswordsai.engine
 
-import fr.univcotedazur.crosswordsai.data.model.CrosswordData
-import fr.univcotedazur.crosswordsai.data.model.GridCell
-import fr.univcotedazur.crosswordsai.data.model.WordDefinition
+import fr.miage.m1.crosswordsai.data.model.CrosswordData
+import fr.miage.m1.crosswordsai.data.model.GridCell
+import fr.miage.m1.crosswordsai.data.model.WordDefinition
 
 /**
  * Moteur de génération de grilles de mots croisés rectangulaires complètes.

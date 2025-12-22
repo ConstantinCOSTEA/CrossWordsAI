@@ -1,8 +1,8 @@
-package fr.univcotedazur.parser
+package fr.miage.m1.parser
 
-import fr.univcotedazur.model.CrosswordGrid
-import fr.univcotedazur.model.Direction
-import fr.univcotedazur.model.Word
+import fr.miage.m1.model.CrosswordGrid
+import fr.miage.m1.model.Direction
+import fr.miage.m1.model.Word
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 

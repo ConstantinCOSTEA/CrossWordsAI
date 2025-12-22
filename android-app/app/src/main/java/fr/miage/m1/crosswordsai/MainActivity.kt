@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai
+package fr.miage.m1.crosswordsai
 
 import android.content.Intent
 import android.os.Bundle
@@ -30,11 +30,11 @@ import androidx.lifecycle.lifecycleScope
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationException
 import com.auth0.android.provider.WebAuthProvider
-import fr.univcotedazur.crosswordsai.ui.theme.CrossWordsAITheme
-import fr.univcotedazur.crosswordsai.ui.views.CrossedWordsView
-import fr.univcotedazur.crosswordsai.ui.views.HomeView
-import fr.univcotedazur.crosswordsai.ui.views.PictureView
-import fr.univcotedazur.crosswordsai.ui.views.SettingsView
+import fr.miage.m1.crosswordsai.ui.theme.CrossWordsAITheme
+import fr.miage.m1.crosswordsai.ui.views.CrossedWordsView
+import fr.miage.m1.crosswordsai.ui.views.HomeView
+import fr.miage.m1.crosswordsai.ui.views.PictureView
+import fr.miage.m1.crosswordsai.ui.views.SettingsView
 import kotlinx.coroutines.launch
 
 /*

@@ -1,12 +1,12 @@
-package fr.univcotedazur
+package fr.miage.m1
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
-import fr.univcotedazur.ai.ConstraintBuilder
-import fr.univcotedazur.model.Word
-import fr.univcotedazur.parser.CrosswordJsonParser
-import fr.univcotedazur.utils.StringUtils
+import fr.miage.m1.ai.ConstraintBuilder
+import fr.miage.m1.model.Word
+import fr.miage.m1.parser.CrosswordJsonParser
+import fr.miage.m1.utils.StringUtils
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
@@ -16,7 +16,6 @@ fun main() = runBlocking {
     println("=".repeat(60))
     println()
 
-    // Configuration de l'agent (on créera une nouvelle instance à chaque round)
     val apiKey = System.getenv("GOOGLE_API_KEY")
     val systemPrompt = """
         Expert en mots croises francais. Tu dois trouver des mots francais correspondant exactement aux definitions et contraintes donnees.

@@ -1,4 +1,4 @@
-package com
+package fr.miage.m1
 
 import io.ktor.server.application.*
 import io.ktor.serialization.kotlinx.json.*

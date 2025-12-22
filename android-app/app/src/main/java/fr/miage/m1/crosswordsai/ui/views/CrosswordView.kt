@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai.ui.views
+package fr.miage.m1.crosswordsai.ui.views
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fr.univcotedazur.crosswordsai.data.model.GridCell
-import fr.univcotedazur.crosswordsai.viewmodel.CrosswordViewModel
+import fr.miage.m1.crosswordsai.data.model.GridCell
+import fr.miage.m1.crosswordsai.viewmodel.CrosswordViewModel
 import kotlin.math.roundToInt
 
 @Composable

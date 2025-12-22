@@ -1,4 +1,4 @@
-package com.schemas
+package fr.miage.m1.schemas
 
 import kotlinx.serialization.Serializable
 

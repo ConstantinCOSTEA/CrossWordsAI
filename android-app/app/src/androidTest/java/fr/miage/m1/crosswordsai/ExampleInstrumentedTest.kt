@@ -1,4 +1,4 @@
-package fr.univcotedazur.crosswordsai
+package fr.miage.m1.crosswordsai
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

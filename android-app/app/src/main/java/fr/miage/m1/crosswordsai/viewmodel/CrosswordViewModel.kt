@@ -1,12 +1,12 @@
-package fr.univcotedazur.crosswordsai.viewmodel
+package fr.miage.m1.crosswordsai.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import fr.univcotedazur.crosswordsai.engine.CrosswordLayoutEngine
-import fr.univcotedazur.crosswordsai.data.model.CrosswordData
-import fr.univcotedazur.crosswordsai.data.model.GridCell
-import fr.univcotedazur.crosswordsai.data.model.WordAnswersResponse
+import fr.miage.m1.crosswordsai.engine.CrosswordLayoutEngine
+import fr.miage.m1.crosswordsai.data.model.CrosswordData
+import fr.miage.m1.crosswordsai.data.model.GridCell
+import fr.miage.m1.crosswordsai.data.model.WordAnswersResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch

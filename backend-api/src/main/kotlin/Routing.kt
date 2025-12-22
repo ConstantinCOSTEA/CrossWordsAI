@@ -1,7 +1,7 @@
-package com
+package fr.miage.m1
 
-import com.routes.gridRoutes
-import com.routes.healthRoutes
+import fr.miage.m1.routes.gridRoutes
+import fr.miage.m1.routes.healthRoutes
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 

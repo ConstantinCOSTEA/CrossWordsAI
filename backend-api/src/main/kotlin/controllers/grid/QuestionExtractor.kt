@@ -1,4 +1,4 @@
-package com.controllers.grid
+package fr.miage.m1.controllers.grid
 
 import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.leptonica.PIX

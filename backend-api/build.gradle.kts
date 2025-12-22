@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-group = "com"
+group = "fr.miage.m1"
 version = "0.0.1"
 
 application {

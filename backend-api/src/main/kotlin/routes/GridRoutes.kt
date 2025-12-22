@@ -1,6 +1,6 @@
-package com.routes
+package fr.miage.m1.routes
 
-import com.controllers.grid.GridController
+import fr.miage.m1.controllers.grid.GridController
 import io.ktor.server.routing.*
 
 /**

@@ -1,6 +1,5 @@
-package com.controllers.grid
+package fr.miage.m1.controllers.grid
 
-import org.bytedeco.opencv.global.opencv_core.*
 import org.bytedeco.opencv.global.opencv_imgcodecs.*
 import org.bytedeco.opencv.global.opencv_imgproc.*
 import org.bytedeco.opencv.opencv_core.*

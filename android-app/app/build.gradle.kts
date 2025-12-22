@@ -8,13 +8,13 @@ plugins {
 }
 
 android {
-    namespace = "fr.univcotedazur.crosswordsai"
+    namespace = "fr.miage.m1.crosswordsai"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "fr.univcotedazur.crosswordsai"
+        applicationId = "fr.miage.m1.crosswordsai"
         minSdk = 29
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.controllers.grid
+package fr.miage.m1.controllers.grid
 
 import java.io.File
 import java.net.HttpURLConnection

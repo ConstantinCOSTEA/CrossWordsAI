@@ -4,7 +4,7 @@ plugins {
     application
 }
 
-group = "fr.univcotedazur"
+group = "fr.miage.m1"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -23,5 +23,5 @@ tasks.test {
 }
 
 application {
-    mainClass.set("fr.univcotedazur.MainKt")
+    mainClass.set("fr.miage.m1.MainKt")
 }
