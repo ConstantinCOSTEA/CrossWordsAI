@@ -36,7 +36,8 @@ data class WordDefinition(
     val number: Int,
     val order: Int,
     val size: Int,
-    val direction: String
+    val direction: String,
+    val clue: String = ""  // Définition du mot (récupérée par OCR)
 ) {
     val idKey: String
         get() = "${number}_${order}_$direction"

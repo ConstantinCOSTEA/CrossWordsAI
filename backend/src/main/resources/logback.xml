@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Set root level to INFO (less verbose) -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <!-- Suppress verbose Netty debug logs -->
+    <logger name="io.netty" level="WARN" />
+    
+    <!-- Show Ktor logs at INFO level -->
+    <logger name="io.ktor" level="INFO" />
+    
+    <!-- Show application logs at DEBUG level (for development) -->
+    <logger name="fr.miage.m1" level="DEBUG" />
+</configuration>
