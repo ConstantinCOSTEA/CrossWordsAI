@@ -15,6 +15,9 @@
     <!-- Suppress verbose Netty debug logs -->
     <logger name="io.netty" level="WARN" />
     
+    <!-- Suppress Koog AI agent logs -->
+    <logger name="ai.koog" level="WARN" />
+    
     <!-- Show Ktor logs at INFO level -->
     <logger name="io.ktor" level="INFO" />
     

@@ -271,42 +271,68 @@ class GridAnalyzer(
     private fun buildWordsFromMatrix(cellMatrix: Array<Array<Boolean>>, numRows: Int, numCols: Int, clues: ParsedClues): List<WordEntry> {
         val words = mutableListOf<WordEntry>()
 
-        // Horizontal
+        // --- Horizontal ---
         for (row in 0 until numRows) {
             val lineClues = clues.horizontal[row + 1] ?: listOf("")
-            var wordOrder = 0
+            var currentOrder = 0 // Compteur de mots sur la ligne
             var startCol = -1
+
             for (col in 0..numCols) {
                 val isWhite = col < numCols && cellMatrix[row][col]
+
                 if (isWhite && startCol == -1) {
-                    startCol = col
+                    startCol = col // Début trouvé
                 } else if (!isWhite && startCol != -1) {
+                    // Fin trouvée (Case noire ou bord)
                     val size = col - startCol
+
+                    // On garde la sécurité pour ne pas créer de mots d'une seule lettre
                     if (size >= 2) {
-                        wordOrder++
-                        val clueText = lineClues.getOrElse(wordOrder - 1) { "" }
-                        words.add(WordEntry(row + 1, wordOrder, Direction.HORIZONTAL, size, clueText, startCol + 1, row + 1))
+                        currentOrder++
+                        val clueText = lineClues.getOrElse(currentOrder - 1) { "" }
+
+                        words.add(WordEntry(
+                            number = row + 1,
+                            order = currentOrder,
+                            direction = Direction.HORIZONTAL,
+                            size = size,
+                            start = startCol + 1, // Conversion Base 1
+                            end = col,            // 'col' est l'index de la case noire, donc la fin du mot en Base 1
+                            clue = clueText
+                        ))
                     }
                     startCol = -1
                 }
             }
         }
 
-        // Vertical
+        // --- Vertical ---
         for (col in 0 until numCols) {
             val colClues = clues.vertical[col + 1] ?: listOf("")
-            var wordOrder = 0
+            var currentOrder = 0
             var startRow = -1
+
             for (row in 0..numRows) {
                 val isWhite = row < numRows && cellMatrix[row][col]
+
                 if (isWhite && startRow == -1) {
                     startRow = row
                 } else if (!isWhite && startRow != -1) {
                     val size = row - startRow
+
                     if (size >= 2) {
-                        wordOrder++
-                        val clueText = colClues.getOrElse(wordOrder - 1) { "" }
-                        words.add(WordEntry(col + 1, wordOrder, Direction.VERTICAL, size, clueText, col + 1, startRow + 1))
+                        currentOrder++
+                        val clueText = colClues.getOrElse(currentOrder - 1) { "" }
+
+                        words.add(WordEntry(
+                            number = col + 1,
+                            order = currentOrder,
+                            direction = Direction.VERTICAL,
+                            size = size,
+                            start = startRow + 1,
+                            end = row,
+                            clue = clueText
+                        ))
                     }
                     startRow = -1
                 }

@@ -5,5 +5,5 @@ ktor:
     deployment:
         port: 8080
 
-        requestReadTimeoutSeconds: 300
-        connectionIdleTimeoutSeconds: 300
+        requestReadTimeoutSeconds: 600
+        connectionIdleTimeoutSeconds: 600

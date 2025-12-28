@@ -27,5 +27,7 @@ data class WordInfo(
     val order: Int,
     val direction: Direction,
     val size: Int,
+    val start: Int,
+    val end: Int,
     val clue: String
 )

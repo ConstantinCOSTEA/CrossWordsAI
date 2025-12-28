@@ -43,5 +43,5 @@ fun Application.module() {
     }
     
     // Log de démarrage
-    log.info("CrossWordsAI Backend démarré sur http://localhost:8080")
+    log.info("CrossWordsAI Backend demarre sur http://localhost:8080")
 }

@@ -5,205 +5,203 @@ import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 import fr.miage.m1.model.CrosswordGrid
 import fr.miage.m1.model.WordEntry
+import kotlinx.coroutines.delay
 
-/**
- * Service de résolution de grilles de mots croisés via LLM
- */
 class CrosswordSolver(private val apiKey: String) {
-    
-    private val systemPrompt = """
-        Expert en mots croisés français. Tu dois trouver des mots français correspondant exactement aux définitions et contraintes données.
-        
-        RÈGLES STRICTES :
-        - Tous les mots DOIVENT être en français
-        - Respecter EXACTEMENT le nombre de lettres demandé
-        - Respecter tous les patterns de contraintes fournis
-        - Les mots peuvent être au pluriel
-        - Pour les noms propres, supprimer les accents et espaces
-        
-        Réponds toujours au format demandé avec le mot et ton niveau de confiance.
-    """.trimIndent()
-    
-    /**
-     * Résout une grille de mots croisés
-     * 
-     * @param grid La grille à résoudre (sera modifiée en place.)
-     * @param maxRounds Nombre maximum de rounds de résolution
-     * @param onProgress Callback appelé après chaque round avec le nombre de mots résolus
-     * @return La grille avec les réponses remplies
-     */
+
+    // On initialise l'agent une seule fois (lazy) pour économiser des ressources.
+    // Temperature basse (0.1) pour être très strict sur les contraintes.
+    private val agent by lazy {
+        AIAgent(
+            promptExecutor = simpleGoogleAIExecutor(apiKey),
+            systemPrompt = ConstraintBuilder.SYSTEM_PROMPT,
+            temperature = 0.1,
+            llmModel = GoogleModels.Gemini2_5Flash
+        )
+    }
+
     suspend fun solve(
         grid: CrosswordGrid,
         maxRounds: Int = 10,
-        onProgress: ((round: Int, solved: Int, total: Int) -> Unit)? = null
+        onRoundComplete: (suspend (round: Int, solvedWords: List<WordEntry>) -> Unit)? = null
     ): CrosswordGrid {
-        println("=" .repeat(60))
-        println("SOLVEUR DE MOTS CROISÉS - DÉMARRAGE")
-        println("=" .repeat(60))
-        println("Grille: ${grid.width}x${grid.height}, ${grid.getTotalCount()} mots")
-        println()
-        
+        logHeader("DÉMARRAGE SOLVEUR", "Grille: ${grid.width}x${grid.height}, ${grid.getTotalCount()} mots")
+
         var roundNumber = 0
         var previousSolvedCount = 0
-        
+        var consecutiveEmptyRounds = 0 // Compteur pour détecter si l'IA tourne en rond
+
+        // Boucle principale
         while (grid.getSolvedCount() < grid.getTotalCount() && roundNumber < maxRounds) {
             roundNumber++
-            
-            println("-".repeat(60))
-            println("ROUND #$roundNumber")
-            println("-".repeat(60))
-            
-            val unsolvedWords = grid.words.filter { !it.isSolved() }
-            
+            println("\n--- ROUND #$roundNumber (Résolus: ${grid.getSolvedCount()}/${grid.getTotalCount()}) ---")
+
+            // 1. Sélectionner les mots à chercher (priorité aux mots longs ou à trous)
+            val unsolvedWords = getPrioritizedUnsolvedWords(grid)
+
             if (unsolvedWords.isEmpty()) {
-                println("[INFO] Tous les mots sont résolus!")
+                println("Tous les mots sont résolus !")
                 break
             }
-            
-            println("Mots non résolus: ${unsolvedWords.size}")
-            
-            // Priorité : mots longs d'abord, puis par nombre de contraintes
-            val prioritizedWords = unsolvedWords.sortedByDescending { word ->
-                when {
-                    word.size >= 8 -> 1000 + word.size
-                    word.size == 2 -> -100
-                    else -> grid.getConstraints(word).size
-                }
-            }
-            
-            // Construire les mots avec leurs contraintes
-            val wordsWithConstraints = prioritizedWords.map { word ->
+
+            // 2. Préparer le prompt
+            val wordsWithConstraints = unsolvedWords.map { word ->
                 word to grid.getConstraints(word)
             }
-            
             val batchPrompt = ConstraintBuilder.buildBatchPrompt(wordsWithConstraints)
-            
+
             try {
-                val agent = AIAgent(
-                    promptExecutor = simpleGoogleAIExecutor(apiKey),
-                    systemPrompt = systemPrompt,
-                    temperature = 0.3,
-                    maxIterations = 10,
-                    llmModel = GoogleModels.Gemini2_5Flash
-                )
-                
+                // 3. Appel IA
                 val response = agent.run(batchPrompt).trim()
-                
-                println("Réponse reçue (${response.length} caractères)")
-                
-                val batchResults = ConstraintBuilder.parseBatchResponse(response, prioritizedWords.size)
-                
+
+                // 4. Parsing de la réponse
+                val batchResults = ConstraintBuilder.parseBatchResponse(response, unsolvedWords.size)
+
                 if (batchResults.isEmpty()) {
-                    println("[ERREUR] Aucune réponse valide. Fin du round.")
+                    println("[INFO] Aucune réponse valide reçue ce round.")
+                    consecutiveEmptyRounds++
+
+                    // SÉCURITÉ : Si l'IA échoue 3 fois de suite, on arrête pour ne pas insister inutilement
+                    if (consecutiveEmptyRounds >= 3) {
+                        println("[STOP] L'IA ne trouve plus rien depuis 3 tours. Arrêt de la résolution.")
+                        break
+                    }
+
+                    // Petit délai avant de retenter pour laisser respirer l'API
+                    delay(2000)
                     continue
+                } else {
+                    // On a trouvé des mots, on reset le compteur d'échecs
+                    consecutiveEmptyRounds = 0
                 }
-                
-                // Phase 1: Valider les candidats
-                val validCandidates = mutableListOf<WordCandidate>()
-                
-                batchResults.forEach { (index, result) ->
-                    val word = prioritizedWords[index]
-                    val (answer, confidence) = result
-                    val normalizedAnswer = StringUtils.cleanAnswer(answer)
-                    
-                    // Vérifier la longueur
-                    if (normalizedAnswer.length != word.size) {
-                        println("[${word.idKey}] REJETÉ: longueur ${normalizedAnswer.length} != ${word.size}")
-                        return@forEach
-                    }
-                    
-                    // Vérifier les contraintes
-                    val constraints = grid.getConstraints(word)
-                    val isValid = constraints.all { (idx, expectedChar) ->
-                        normalizedAnswer.getOrNull(idx)?.uppercaseChar() == expectedChar.uppercaseChar()
-                    }
-                    
-                    if (!isValid) {
-                        println("[${word.idKey}] REJETÉ: ne respecte pas les contraintes")
-                        return@forEach
-                    }
-                    
-                    validCandidates.add(WordCandidate(word, normalizedAnswer, confidence))
-                    println("[${word.idKey}] VALIDE: $normalizedAnswer ($confidence%)")
-                }
-                
-                // Phase 2 : Résolution des conflits
-                val rejectedWords = resolveConflicts(validCandidates)
-                
-                // Phase 3 : Placer les mots gagnants
-                val winners = validCandidates.filter { it.word !in rejectedWords }
-                winners.forEach { candidate ->
-                    grid.fillWord(candidate.word, candidate.answer)
-                    candidate.word.confidence = candidate.confidence
-                }
-                
-                println("Mots placés ce round: ${winners.size}")
-                
-                // Auto-compléter les mots par intersection
-                grid.words.forEach { word ->
-                    val wasSolved = word.isSolved()
-                    grid.tryAutoFillWord(word)
-                    if (!wasSolved && word.isSolved()) {
-                        println("[${word.idKey}] Auto-complété: ${word.answer}")
-                    }
-                }
-                
-                // Détecter et gérer les conflits post-placement
-                val conflicts = grid.detectConflicts()
-                if (conflicts.isNotEmpty()) {
-                    println("CONFLITS DÉTECTÉS: ${conflicts.size}")
-                    conflicts.forEach { (word1, word2) ->
-                        grid.removeWord(word1)
-                        grid.removeWord(word2)
-                        println("Supprimé: ${word1.idKey} et ${word2.idKey}")
-                    }
-                }
-                
-                onProgress?.invoke(roundNumber, grid.getSolvedCount(), grid.getTotalCount())
-                
-                println("\nGrille après round #$roundNumber (${grid.getSolvedCount()}/${grid.getTotalCount()}):")
-                println(grid.display())
-                
+
+                // 5. Traitement et validation des résultats
+                processRoundResults(grid, unsolvedWords, batchResults)
+
+                // 6. Notification (Callback pour le SSE)
+                val solvedNow = grid.words.filter { it.isSolved() }
+                onRoundComplete?.invoke(roundNumber, solvedNow)
+
+                logProgress(grid)
+
+                // 7. Vérification de la stagnation (Si on n'avance plus, on arrête)
                 if (grid.getSolvedCount() == previousSolvedCount) {
-                    println("[WARNING] Aucun progrès. Arrêt.")
+                    println("[STOP] Stagnation détectée (pas de nouveaux mots validés).")
                     break
                 }
                 previousSolvedCount = grid.getSolvedCount()
-                
+
             } catch (e: Exception) {
-                println("[ERREUR] Exception: ${e.message}")
+                // Gestion spécifique de l'erreur 429 (Quota)
+                if (e.message?.contains("429") == true) {
+                    println("[CRITIQUE] Quota Google Gemini dépassé (Erreur 429). Arrêt d'urgence.")
+                    break
+                }
+                println("[ERREUR] Problème lors du round: ${e.message}")
                 e.printStackTrace()
-                break
+                break // On sort de la boucle en cas d'erreur technique grave
             }
+
+            // --- CRUCIAL : TEMPORISATION ---
+            // On force une pause de 4 secondes entre chaque round.
+            // Cela limite les appels à ~15 par minute, ce qui est safe pour le Free Tier.
+            println("Pause API (4s)...")
+            delay(4000)
         }
-        
-        println("=" .repeat(60))
-        println("RÉSOLUTION TERMINÉE")
-        println("Mots résolus: ${grid.getSolvedCount()}/${grid.getTotalCount()}")
-        println("Rounds: $roundNumber")
-        println("=" .repeat(60))
-        
+
+        logHeader("FIN DE RÉSOLUTION", "Total résolu: ${grid.getSolvedCount()}/${grid.getTotalCount()}")
         return grid
     }
-    
+
     /**
-     * Résout les conflits entre candidats en gardant ceux avec la plus haute confiance
+     * Trie les mots non résolus par priorité :
+     * 1. Mots longs (plus faciles à trouver pour l'IA sans contexte)
+     * 2. Mots ayant déjà des lettres placées (contraintes)
+     */
+    private fun getPrioritizedUnsolvedWords(grid: CrosswordGrid): List<WordEntry> {
+        return grid.words.filter { !it.isSolved() }
+            .sortedByDescending { word ->
+                val constraintsCount = grid.getConstraints(word).size
+                when {
+                    word.size >= 8 -> 100 + word.size // Bonus mots longs
+                    constraintsCount > 0 -> 50 + constraintsCount // Bonus mots avec indices
+                    else -> 0
+                }
+            }
+    }
+
+    /**
+     * Traite les réponses de l'IA : Validation -> Résolution de conflits -> Remplissage
+     */
+    private fun processRoundResults(
+        grid: CrosswordGrid,
+        originalList: List<WordEntry>,
+        results: Map<Int, Pair<String, Int>>
+    ) {
+        val candidates = mutableListOf<WordCandidate>()
+
+        // A. Validation syntaxique (longueur + respect des lettres déjà là)
+        results.forEach { (index, res) ->
+            val (answer, confidence) = res
+            val wordEntry = originalList.getOrNull(index) ?: return@forEach
+
+            if (isValidCandidate(grid, wordEntry, answer)) {
+                candidates.add(WordCandidate(wordEntry, answer, confidence))
+            } else {
+                // Log discret pour debug
+                // println("[REJET] ${wordEntry.clue.take(15)}... -> $answer (Ne correspond pas à la grille)")
+            }
+        }
+
+        // B. Résolution des conflits (si deux mots veulent mettre une lettre différente au même endroit)
+        val rejectedWords = resolveConflicts(candidates)
+        val winners = candidates.filter { it.word !in rejectedWords }
+
+        // C. Application dans la grille
+        winners.forEach { cand ->
+            grid.fillWord(cand.word, cand.answer)
+            cand.word.confidence = cand.confidence
+            println("[VALIDE] [${cand.word.number}-${cand.word.direction}] ${cand.answer} (${cand.confidence}%)")
+        }
+
+        // D. Auto-complétion (Si un mot vertical est entièrement rempli par les horizontaux, on le marque résolu)
+        grid.words.forEach { grid.tryAutoFillWord(it) }
+    }
+
+    private fun isValidCandidate(grid: CrosswordGrid, word: WordEntry, answer: String): Boolean {
+        if (answer.length != word.size) return false
+
+        // Vérifie si le nouveau mot respecte les lettres DÉJÀ présentes dans la grille
+        val constraints = grid.getConstraints(word)
+        return constraints.all { (idx, char) ->
+            answer[idx] == char
+        }
+    }
+
+    /**
+     * Détecte si deux candidats proposés par l'IA entrent en collision
+     * (ex: H1 veut mettre 'A' à (1,1) et V1 veut mettre 'B' à (1,1))
+     * On garde celui qui a la plus haute confiance.
      */
     private fun resolveConflicts(candidates: List<WordCandidate>): Set<WordEntry> {
         val conflictMap = mutableMapOf<Pair<Int, Int>, MutableList<WordCandidate>>()
-        
+        val rejected = mutableSetOf<WordEntry>()
+
+        // 1. Mapper chaque lettre proposée à sa coordonnée (x,y)
         candidates.forEach { candidate ->
-            candidate.word.getCellPositions().forEachIndexed { idx, pos ->
+            candidate.word.coordinates.forEachIndexed { idx, pos ->
                 val char = candidate.answer[idx]
-                
+
+                // On compare avec tous les autres candidats
                 candidates.filter { it != candidate }.forEach { other ->
-                    val otherPositions = other.word.getCellPositions()
-                    val otherIdx = otherPositions.indexOf(pos)
+                    val otherIdx = other.word.coordinates.indexOf(pos)
+                    // Si l'autre candidat passe par la même case
                     if (otherIdx >= 0) {
                         val otherChar = other.answer[otherIdx]
-                        if (char != otherChar) {
+                        // Et qu'ils ne sont pas d'accord sur la lettre
+                        if (otherChar != char) {
                             conflictMap.getOrPut(pos) { mutableListOf() }.apply {
-                                if (!contains(candidate)) add(candidate)
+                                add(candidate)
                                 if (!contains(other)) add(other)
                             }
                         }
@@ -211,22 +209,37 @@ class CrosswordSolver(private val apiKey: String) {
                 }
             }
         }
-        
-        val rejected = mutableSetOf<WordEntry>()
-        
-        conflictMap.forEach { (_, conflicting) ->
-            if (conflicting.size > 1) {
-                val sorted = conflicting.sortedByDescending { it.confidence }
-                sorted.drop(1).forEach { rejected.add(it.word) }
+
+        // 2. Résoudre les conflits par vote de confiance
+        conflictMap.values.forEach { conflictingCandidates ->
+            if (conflictingCandidates.size > 1) {
+                // On trie par confiance décroissante
+                val sorted = conflictingCandidates.sortedByDescending { it.confidence }
+                val winner = sorted.first()
+
+                // Tous les autres sont rejetés
+                sorted.drop(1).forEach { loser ->
+                    rejected.add(loser.word)
+                    println("[CONFLIT] ${loser.answer} rejeté au profit de ${winner.answer} (Conf: ${winner.confidence} vs ${loser.confidence})")
+                }
             }
         }
-        
+
         return rejected
     }
-    
-    private data class WordCandidate(
-        val word: WordEntry,
-        val answer: String,
-        val confidence: Int
-    )
+
+    private fun logHeader(title: String, subtitle: String) {
+        println("=".repeat(60))
+        println(title)
+        println(subtitle)
+        println("=".repeat(60))
+    }
+
+    private fun logProgress(grid: CrosswordGrid) {
+        // Décommenter pour afficher la grille ASCII dans la console (utile pour debug)
+        println(grid.display())
+    }
+
+    // Classe interne simple pour stocker les propositions avant validation
+    private data class WordCandidate(val word: WordEntry, val answer: String, val confidence: Int)
 }
