@@ -38,7 +38,7 @@ object ConstraintBuilder {
             } else {
                 ""
             }
-            // On simplifie la ligne de définition
+
             "[${index + 1}] (${word.size} lettres) : \"${word.clue}\"$constraintInfo"
         }.joinToString("\n")
 
@@ -63,7 +63,6 @@ object ConstraintBuilder {
                 val confidence = confidenceStr.toIntOrNull()
 
                 if (index != null && confidence != null && index in 1..wordCount) {
-                    // On nettoie le mot ici aussi par sécurité via StringUtils
                     results[index - 1] = StringUtils.cleanAnswer(word) to confidence
                 }
             }

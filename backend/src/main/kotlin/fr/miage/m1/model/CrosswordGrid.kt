@@ -70,14 +70,14 @@ data class CrosswordGrid(
             setChar(x, y, answer[index].uppercaseChar())
         }
     }
-    
+
     /**
      * Enlève un mot de la grille
      */
     fun removeWord(word: WordEntry) {
         word.coordinates.forEach { (x, y) ->
             // Ne pas effacer si un autre mot résolu utilise cette case
-            val otherWords = words.filter { 
+            val otherWords = words.filter {
                 it != word && it.isSolved() && it.coordinates.contains(Pair(x, y))
             }
             if (otherWords.isEmpty()) {
@@ -97,39 +97,6 @@ data class CrosswordGrid(
                 word.answer = chars.joinToString("") { it.toString() }
             }
         }
-    }
-    
-    /**
-     * Détecte les conflits entre mots résolus
-     * @return Liste de paires de mots en conflit
-     */
-    fun detectConflicts(): List<Pair<WordEntry, WordEntry>> {
-        val conflicts = mutableListOf<Pair<WordEntry, WordEntry>>()
-        val solvedWords = words.filter { it.isSolved() }
-        
-        for (i in solvedWords.indices) {
-            for (j in i + 1 until solvedWords.size) {
-                val word1 = solvedWords[i]
-                val word2 = solvedWords[j]
-                
-                val sharedCells = word1.coordinates.intersect(word2.coordinates.toSet())
-                
-                for ((x, y) in sharedCells) {
-                    val idx1 = word1.coordinates.indexOf(Pair(x, y))
-                    val idx2 = word2.coordinates.indexOf(Pair(x, y))
-                    
-                    val char1 = word1.answer?.getOrNull(idx1)
-                    val char2 = word2.answer?.getOrNull(idx2)
-                    
-                    if (char1 != null && char2 != null && char1 != char2) {
-                        conflicts.add(word1 to word2)
-                        break
-                    }
-                }
-            }
-        }
-        
-        return conflicts
     }
     
     fun getSolvedCount(): Int = words.count { it.isSolved() }

@@ -12,8 +12,8 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <!-- Suppress verbose Netty debug logs -->
-    <logger name="io.netty" level="WARN" />
+    <!-- Suppress Netty logs (including shutdown warnings) -->
+    <logger name="io.netty" level="ERROR" />
     
     <!-- Suppress Koog AI agent logs -->
     <logger name="ai.koog" level="WARN" />

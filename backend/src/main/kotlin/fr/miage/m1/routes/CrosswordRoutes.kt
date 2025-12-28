@@ -21,7 +21,7 @@ fun Route.crosswordRoutes() {
 
     /**
      * ÉTAPE 1 : Analyse de l'image
-     * Reçoit une image (Multipart) -> Renvoie la structure JSON de la grille
+     * Reçoit une image (Multipart) → Renvoie la structure JSON de la grille
      */
     post("/analyze") {
         var imageFile: File? = null
@@ -86,7 +86,7 @@ fun Route.crosswordRoutes() {
      */
     post("/solve-stream") {
         try {
-            // 1. On récupère la grille (peut-être modifiée par l'utilisateur sur le mobile)
+
             val gridJson = call.receiveText()
             // On configure le Json pour ignorer les clés inconnues au cas où
             val jsonConfig = Json { ignoreUnknownKeys = true }
@@ -99,6 +99,10 @@ fun Route.crosswordRoutes() {
 
             // 2. On ouvre le flux SSE (Server-Sent Events)
             call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+
+                write("event: connected\n")
+                write("data: {\"status\": \"started\"}\n\n")
+                flush()
 
                 // Cette callback est appelée à chaque fin de round par le solver
                 solver.solve(grid) { round, solvedWords ->
@@ -116,7 +120,7 @@ fun Route.crosswordRoutes() {
                     val jsonEvent = Json.encodeToString(roundEvent)
                     write("event: round\n")
                     write("data: $jsonEvent\n\n")
-                    flush() // Force l'envoi immédiat au mobile
+                    flush() // Force l'envoi immédiat
                 }
 
                 // 3. Événement de fin
@@ -135,8 +139,6 @@ fun Route.crosswordRoutes() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            // Note: En SSE, si ça plante au milieu, c'est dur d'envoyer une erreur HTTP classique.
-            // Souvent on ferme juste la connexion ou on envoie un event "error".
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erreur de résolution", e.message))
         }
     }

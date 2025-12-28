@@ -32,11 +32,6 @@ class ClueExtractor {
         return callOCRSpaceAPI(base64Image, apiKey)
     }
 
-    fun extractClues(imageFile: File, apiKey: String? = null): Map<ClueKey, String> {
-        val rawText = extractText(imageFile, apiKey)
-        return parseCluesFromText(rawText)
-    }
-
     private fun callOCRSpaceAPI(base64Image: String, apiKey: String?): String {
         val url = URI.create("https://api.ocr.space/parse/image").toURL()
         val connection = url.openConnection() as HttpURLConnection
@@ -61,36 +56,4 @@ class ClueExtractor {
             connection.disconnect()
         }
     }
-
-    private fun parseCluesFromText(text: String): Map<ClueKey, String> {
-        val clues = mutableMapOf<ClueKey, String>()
-
-        // Regex pour capturer: (Numero) . (Texte)
-        val simplePattern = Regex("""(\d+)\s*[.:\-]\s*(.+?)(?=\n\d+|$)""", RegexOption.DOT_MATCHES_ALL)
-
-        val horizRegex = Regex("""HORIZONTAL(?:EMENT)?[:\s]*(.+?)(?=VERTICAL|$)""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-        val vertRegex = Regex("""VERTICAL(?:EMENT)?[:\s]*(.+?)$""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-
-        fun addClues(sectionText: String, direction: String) {
-            simplePattern.findAll(sectionText).forEach { m ->
-                val number = m.groupValues[1].toIntOrNull()
-                val definition = m.groupValues[2].trim()
-                if (number != null && definition.isNotBlank()) {
-                    clues[ClueKey(number, direction)] = definition
-                }
-            }
-        }
-
-        val hMatch = horizRegex.find(text)
-        val vMatch = vertRegex.find(text)
-
-        if (hMatch != null) addClues(hMatch.groupValues[1], "horizontal")
-        if (vMatch != null) addClues(vMatch.groupValues[1], "vertical")
-
-        if (clues.isEmpty()) addClues(text, "horizontal") // Fallback
-
-        return clues
-    }
-
-    data class ClueKey(val number: Int, val direction: String)
 }

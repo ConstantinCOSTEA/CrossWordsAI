@@ -5,20 +5,8 @@ import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 import fr.miage.m1.model.CrosswordGrid
 import fr.miage.m1.model.WordEntry
-import kotlinx.coroutines.delay
 
 class CrosswordSolver(private val apiKey: String) {
-
-    // On initialise l'agent une seule fois (lazy) pour économiser des ressources.
-    // Temperature basse (0.1) pour être très strict sur les contraintes.
-    private val agent by lazy {
-        AIAgent(
-            promptExecutor = simpleGoogleAIExecutor(apiKey),
-            systemPrompt = ConstraintBuilder.SYSTEM_PROMPT,
-            temperature = 0.1,
-            llmModel = GoogleModels.Gemini2_5Flash
-        )
-    }
 
     suspend fun solve(
         grid: CrosswordGrid,
@@ -51,6 +39,12 @@ class CrosswordSolver(private val apiKey: String) {
             val batchPrompt = ConstraintBuilder.buildBatchPrompt(wordsWithConstraints)
 
             try {
+                val agent = AIAgent(
+                    promptExecutor = simpleGoogleAIExecutor(apiKey),
+                    systemPrompt = ConstraintBuilder.SYSTEM_PROMPT,
+                    temperature = 0.1,
+                    llmModel = GoogleModels.Gemini2_5Flash
+                )
                 // 3. Appel IA
                 val response = agent.run(batchPrompt).trim()
 
@@ -67,11 +61,9 @@ class CrosswordSolver(private val apiKey: String) {
                         break
                     }
 
-                    // Petit délai avant de retenter pour laisser respirer l'API
-                    delay(2000)
                     continue
                 } else {
-                    // On a trouvé des mots, on reset le compteur d'échecs
+                    // On a trouvé des mots, on remet à 0 le compteur d'échecs
                     consecutiveEmptyRounds = 0
                 }
 
@@ -92,21 +84,9 @@ class CrosswordSolver(private val apiKey: String) {
                 previousSolvedCount = grid.getSolvedCount()
 
             } catch (e: Exception) {
-                // Gestion spécifique de l'erreur 429 (Quota)
-                if (e.message?.contains("429") == true) {
-                    println("[CRITIQUE] Quota Google Gemini dépassé (Erreur 429). Arrêt d'urgence.")
-                    break
-                }
                 println("[ERREUR] Problème lors du round: ${e.message}")
-                e.printStackTrace()
-                break // On sort de la boucle en cas d'erreur technique grave
+                break
             }
-
-            // --- CRUCIAL : TEMPORISATION ---
-            // On force une pause de 4 secondes entre chaque round.
-            // Cela limite les appels à ~15 par minute, ce qui est safe pour le Free Tier.
-            println("Pause API (4s)...")
-            delay(4000)
         }
 
         logHeader("FIN DE RÉSOLUTION", "Total résolu: ${grid.getSolvedCount()}/${grid.getTotalCount()}")
@@ -131,7 +111,7 @@ class CrosswordSolver(private val apiKey: String) {
     }
 
     /**
-     * Traite les réponses de l'IA : Validation -> Résolution de conflits -> Remplissage
+     * Traite les réponses de l'IA : Validation → Résolution de conflits → Remplissage
      */
     private fun processRoundResults(
         grid: CrosswordGrid,
@@ -157,15 +137,69 @@ class CrosswordSolver(private val apiKey: String) {
         val rejectedWords = resolveConflicts(candidates)
         val winners = candidates.filter { it.word !in rejectedWords }
 
-        // C. Application dans la grille
+        // C. Application dans la grille avec gestion des conflits avec les mots existants
         winners.forEach { cand ->
-            grid.fillWord(cand.word, cand.answer)
-            cand.word.confidence = cand.confidence
-            println("[VALIDE] [${cand.word.number}-${cand.word.direction}] ${cand.answer} (${cand.confidence}%)")
+            val conflictingWord = findConflictWithExistingWord(grid, cand)
+            
+            if (conflictingWord != null) {
+                val existingConfidence = conflictingWord.confidence
+                val newConfidence = cand.confidence
+                val diff = kotlin.math.abs(existingConfidence - newConfidence)
+                
+                if (diff < 5) {
+                    // Différence < 5% → on enlève les deux (trop incertain)
+                    println("[CONFLIT GRILLE] ${cand.answer} vs ${conflictingWord.answer}: Diff $diff% < 5% → Les deux retirés")
+                    grid.removeWord(conflictingWord)
+                    // On ne place pas le nouveau mot non plus
+                } else if (newConfidence > existingConfidence) {
+                    // Le nouveau est plus confiant → on remplace
+                    println("[CONFLIT GRILLE] ${cand.answer} (${newConfidence}%) remplace ${conflictingWord.answer} (${existingConfidence}%)")
+                    grid.removeWord(conflictingWord)
+                    grid.fillWord(cand.word, cand.answer)
+                    cand.word.confidence = cand.confidence
+                } else {
+                    // L'ancien est plus confiant → on garde l'ancien
+                    println("[CONFLIT GRILLE] ${cand.answer} (${newConfidence}%) rejeté, ${conflictingWord.answer} (${existingConfidence}%) conservé")
+                }
+            } else {
+                // Pas de conflit, placement normal
+                grid.fillWord(cand.word, cand.answer)
+                cand.word.confidence = cand.confidence
+                println("[VALIDE] [${cand.word.number}-${cand.word.direction}] ${cand.answer} (${cand.confidence}%)")
+            }
         }
 
         // D. Auto-complétion (Si un mot vertical est entièrement rempli par les horizontaux, on le marque résolu)
         grid.words.forEach { grid.tryAutoFillWord(it) }
+    }
+    
+    /**
+     * Vérifie si un candidat entre en conflit avec un mot déjà placé dans la grille.
+     * Un conflit = même position, mais lettre différente.
+     */
+    private fun findConflictWithExistingWord(grid: CrosswordGrid, candidate: WordCandidate): WordEntry? {
+        val solvedWords = grid.words.filter { it.isSolved() && it != candidate.word }
+        
+        for (existingWord in solvedWords) {
+            // Trouver les positions communes
+            val candidatePositions = candidate.word.coordinates
+            val existingPositions = existingWord.coordinates
+            
+            for ((candIdx, pos) in candidatePositions.withIndex()) {
+                val existingIdx = existingPositions.indexOf(pos)
+                if (existingIdx >= 0) {
+                    // Position commune trouvée
+                    val candidateChar = candidate.answer[candIdx]
+                    val existingChar = existingWord.answer?.getOrNull(existingIdx)
+                    
+                    if (existingChar != null && candidateChar != existingChar) {
+                        // Conflit détecté !
+                        return existingWord
+                    }
+                }
+            }
+        }
+        return null
     }
 
     private fun isValidCandidate(grid: CrosswordGrid, word: WordEntry, answer: String): Boolean {
@@ -187,7 +221,7 @@ class CrosswordSolver(private val apiKey: String) {
         val conflictMap = mutableMapOf<Pair<Int, Int>, MutableList<WordCandidate>>()
         val rejected = mutableSetOf<WordEntry>()
 
-        // 1. Mapper chaque lettre proposée à sa coordonnée (x,y)
+        // 1. Mapper chaque lettre proposée à sa coordonnée (x, y)
         candidates.forEach { candidate ->
             candidate.word.coordinates.forEachIndexed { idx, pos ->
                 val char = candidate.answer[idx]
@@ -236,7 +270,6 @@ class CrosswordSolver(private val apiKey: String) {
     }
 
     private fun logProgress(grid: CrosswordGrid) {
-        // Décommenter pour afficher la grille ASCII dans la console (utile pour debug)
         println(grid.display())
     }
 
