@@ -5,15 +5,26 @@ import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 import fr.miage.m1.model.CrosswordGrid
 import fr.miage.m1.model.WordEntry
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class CrosswordSolver(private val apiKey: String) {
 
+    /**
+     * Résout la grille de mots croisés en utilisant plusieurs agents IA en parallèle.
+     * @param grid La grille à résoudre
+     * @param maxRounds Nombre maximum de tours de résolution
+     * @param nbAgents Nombre d'agents IA à utiliser en parallèle (divise le travail)
+     * @param onRoundComplete Callback appelé à chaque tour avec les mots résolus
+     */
     suspend fun solve(
         grid: CrosswordGrid,
         maxRounds: Int = 10,
+        nbAgents: Int = 2,
         onRoundComplete: (suspend (round: Int, solvedWords: List<WordEntry>) -> Unit)? = null
     ): CrosswordGrid {
-        logHeader("DÉMARRAGE SOLVEUR", "Grille: ${grid.width}x${grid.height}, ${grid.getTotalCount()} mots")
+        logHeader("DÉMARRAGE SOLVEUR", "Grille: ${grid.width}x${grid.height}, ${grid.getTotalCount()} mots, $nbAgents agents en parallèle")
 
         var roundNumber = 0
         var previousSolvedCount = 0
@@ -32,26 +43,24 @@ class CrosswordSolver(private val apiKey: String) {
                 break
             }
 
-            // 2. Préparer le prompt
-            val wordsWithConstraints = unsolvedWords.map { word ->
-                word to grid.getConstraints(word)
-            }
-            val batchPrompt = ConstraintBuilder.buildBatchPrompt(wordsWithConstraints)
-
             try {
-                val agent = AIAgent(
-                    promptExecutor = simpleGoogleAIExecutor(apiKey),
-                    systemPrompt = ConstraintBuilder.SYSTEM_PROMPT,
-                    temperature = 0.1,
-                    llmModel = GoogleModels.Gemini2_5Flash
-                )
-                // 3. Appel IA
-                val response = agent.run(batchPrompt).trim()
+                // 2. Diviser les mots en N groupes pour les agents parallèles
+                val wordGroups = splitIntoGroups(unsolvedWords, nbAgents)
+                println("[PARALLÉLISATION] ${unsolvedWords.size} mots divisés en ${wordGroups.size} groupes")
 
-                // 4. Parsing de la réponse
-                val batchResults = ConstraintBuilder.parseBatchResponse(response, unsolvedWords.size)
+                // 3. Appels IA en parallèle avec coroutines
+                val allResults = coroutineScope {
+                    wordGroups.mapIndexed { groupIndex, group ->
+                        async {
+                            callAgentForGroup(groupIndex + 1, group, grid)
+                        }
+                    }.awaitAll()
+                }
 
-                if (batchResults.isEmpty()) {
+                // 4. Fusionner tous les résultats (avec ajustement des indices)
+                val mergedResults = mergeResults(allResults, wordGroups)
+
+                if (mergedResults.isEmpty()) {
                     println("[INFO] Aucune réponse valide reçue ce round.")
                     consecutiveEmptyRounds++
 
@@ -68,7 +77,7 @@ class CrosswordSolver(private val apiKey: String) {
                 }
 
                 // 5. Traitement et validation des résultats
-                processRoundResults(grid, unsolvedWords, batchResults)
+                processRoundResults(grid, unsolvedWords, mergedResults)
 
                 // 6. Notification (Callback pour le SSE)
                 val solvedNow = grid.words.filter { it.isSolved() }
@@ -94,6 +103,73 @@ class CrosswordSolver(private val apiKey: String) {
     }
 
     /**
+     * Divise une liste en N groupes équilibrés.
+     */
+    private fun <T> splitIntoGroups(items: List<T>, n: Int): List<List<T>> {
+        if (items.isEmpty() || n <= 0) return listOf(items)
+        val effectiveN = minOf(n, items.size) // Pas plus de groupes que d'éléments
+        val chunkSize = (items.size + effectiveN - 1) / effectiveN
+        return items.chunked(chunkSize)
+    }
+
+    /**
+     * Appelle un agent IA pour un groupe de mots spécifique.
+     * Utilise le StructuredPromptBuilder avec few-shot learning pour améliorer les résultats.
+     */
+    private suspend fun callAgentForGroup(
+        agentId: Int,
+        words: List<WordEntry>,
+        grid: CrosswordGrid
+    ): Map<Int, Triple<String, Int, Boolean>> {
+        if (words.isEmpty()) return emptyMap()
+
+        println("[AGENT #$agentId] Traite ${words.size} définitions...")
+
+        val wordsWithConstraints = words.map { word ->
+            word to grid.getConstraints(word)
+        }
+        
+        // Utilise le nouveau StructuredPromptBuilder avec few-shot learning
+        val userPrompt = StructuredPromptBuilder.buildUserPrompt(wordsWithConstraints)
+
+        val agent = AIAgent(
+            promptExecutor = simpleGoogleAIExecutor(apiKey),
+            systemPrompt = StructuredPromptBuilder.SYSTEM_PROMPT_WITH_EXAMPLES,
+            temperature = 0.1,
+            llmModel = GoogleModels.Gemini2_5Flash
+        )
+
+        val response = agent.run(userPrompt).trim()
+        val results = ConstraintBuilder.parseBatchResponse(response, words.size)
+
+        val altCount = results.count { it.value.third }
+        println("[AGENT #$agentId] A trouvé ${results.size} réponses (dont $altCount ALT)")
+        return results
+    }
+
+    /**
+     * Fusionne les résultats de tous les agents en réajustant les indices
+     * pour correspondre à la liste originale unsolvedWords.
+     */
+    private fun mergeResults(
+        allResults: List<Map<Int, Triple<String, Int, Boolean>>>,
+        wordGroups: List<List<WordEntry>>
+    ): Map<Int, Triple<String, Int, Boolean>> {
+        val merged = mutableMapOf<Int, Triple<String, Int, Boolean>>()
+        var globalOffset = 0
+
+        allResults.forEachIndexed { groupIndex, groupResults ->
+            groupResults.forEach { (localIndex, answer) ->
+                val globalIndex = globalOffset + localIndex
+                merged[globalIndex] = answer
+            }
+            globalOffset += wordGroups.getOrNull(groupIndex)?.size ?: 0
+        }
+
+        return merged
+    }
+
+    /**
      * Trie les mots non résolus par priorité :
      * 1. Mots longs (plus faciles à trouver pour l'IA sans contexte)
      * 2. Mots ayant déjà des lettres placées (contraintes)
@@ -116,20 +192,24 @@ class CrosswordSolver(private val apiKey: String) {
     private fun processRoundResults(
         grid: CrosswordGrid,
         originalList: List<WordEntry>,
-        results: Map<Int, Pair<String, Int>>
+        results: Map<Int, Triple<String, Int, Boolean>>
     ) {
         val candidates = mutableListOf<WordCandidate>()
 
         // A. Validation syntaxique (longueur + respect des lettres déjà là)
+        // Les réponses ALT ignorent les contraintes (utile si les contraintes sont fausses)
         results.forEach { (index, res) ->
-            val (answer, confidence) = res
+            val (answer, confidence, isAlternative) = res
             val wordEntry = originalList.getOrNull(index) ?: return@forEach
 
-            if (isValidCandidate(grid, wordEntry, answer)) {
-                candidates.add(WordCandidate(wordEntry, answer, confidence))
-            } else {
-                // Log discret pour debug
-                // println("[REJET] ${wordEntry.clue.take(15)}... -> $answer (Ne correspond pas à la grille)")
+            if (isAlternative) {
+                // Réponse ALT : l'IA a ignoré les contraintes, on valide juste la longueur
+                if (answer.length == wordEntry.size) {
+                    candidates.add(WordCandidate(wordEntry, answer, confidence, isAlternative = true))
+                    println("[ALT] ${wordEntry.clue.take(20)}... -> $answer (contraintes ignorées)")
+                }
+            } else if (isValidCandidate(grid, wordEntry, answer)) {
+                candidates.add(WordCandidate(wordEntry, answer, confidence, isAlternative = false))
             }
         }
 
@@ -274,5 +354,11 @@ class CrosswordSolver(private val apiKey: String) {
     }
 
     // Classe interne simple pour stocker les propositions avant validation
-    private data class WordCandidate(val word: WordEntry, val answer: String, val confidence: Int)
+    // isAlternative = true si l'IA a ignoré les contraintes (flag ALT)
+    private data class WordCandidate(
+        val word: WordEntry, 
+        val answer: String, 
+        val confidence: Int,
+        val isAlternative: Boolean = false
+    )
 }

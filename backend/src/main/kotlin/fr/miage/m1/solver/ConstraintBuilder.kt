@@ -1,69 +1,30 @@
 package fr.miage.m1.solver
 
-import fr.miage.m1.model.WordEntry
-
 object ConstraintBuilder {
 
-    val SYSTEM_PROMPT = """
-        Tu es un expert en mots croisés. Ta mission est de trouver des mots qui correspondent aux définitions.
-        
-        RÈGLES IMPÉRATIVES :
-        1. Langue : FRANÇAIS uniquement.
-        2. Longueur : Respecte strictement le nombre de lettres attendu.
-        3. Formatage : Envoie les réponses en MAJUSCULES, SANS accents, SANS espaces (ex: "SAO PAULO" -> "SAOPAULO").
-        4. Contraintes : Si un pattern est fourni (ex: _ A _ E), tu DOIS le respecter.
-        
-        FORMAT DE SORTIE ATTENDU (une ligne par réponse) :
-        [ID] MOT CONFIANCE
-        
-        Exemple :
-        [1] ORDINATEUR 95
-        [2] POMME 100
-    """.trimIndent()
-
-    private fun buildWordPattern(length: Int, constraints: Map<Int, Char>): String {
-        return (0 until length).joinToString(" ") { index ->
-            constraints[index]?.toString() ?: "_"
-        }
-    }
-
     /**
-     * Le prompt utilisateur est maintenant beaucoup plus léger.
-     * Il ne contient que la liste des tâches à effectuer.
+     * Parse la réponse de l'IA.
+     * Retourne un Triple : (mot, confiance, isAlternative)
+     * isAlternative = true si l'IA a ignoré les contraintes (flag ALT)
      */
-    fun buildBatchPrompt(words: List<Pair<WordEntry, Map<Int, Char>>>): String {
-        val wordsList = words.mapIndexed { index, (word, constraints) ->
-            val constraintInfo = if (constraints.isNotEmpty()) {
-                " | Pattern imposé: ${buildWordPattern(word.size, constraints)}"
-            } else {
-                ""
-            }
-
-            "[${index + 1}] (${word.size} lettres) : \"${word.clue}\"$constraintInfo"
-        }.joinToString("\n")
-
-        return """
-            Voici les définitions à résoudre pour ce tour. Trouve les mots correspondants.
-            
-            LISTE DES DÉFINITIONS :
-            $wordsList
-        """.trimIndent()
-    }
-
-    fun parseBatchResponse(response: String, wordCount: Int): Map<Int, Pair<String, Int>> {
-        val results = mutableMapOf<Int, Pair<String, Int>>()
-        // Regex un peu plus souple pour gérer d'éventuels espaces superflus
-        val regex = Regex("""\[(\d+)]\s*([A-Z]+)\s*(\d+)""", RegexOption.IGNORE_CASE)
+    fun parseBatchResponse(response: String, wordCount: Int): Map<Int, Triple<String, Int, Boolean>> {
+        val results = mutableMapOf<Int, Triple<String, Int, Boolean>>()
+        // Regex mise à jour pour capturer le flag ALT optionnel
+        val regex = Regex("""\[(\d+)]\s*([A-Z]+)\s*(\d+)\s*(ALT)?""", RegexOption.IGNORE_CASE)
 
         response.lines().forEach { line ->
             val match = regex.find(line.trim())
             if (match != null) {
-                val (indexStr, word, confidenceStr) = match.destructured
+                val indexStr = match.groupValues[1]
+                val word = match.groupValues[2]
+                val confidenceStr = match.groupValues[3]
+                val isAlt = match.groupValues.getOrNull(4)?.isNotEmpty() == true
+
                 val index = indexStr.toIntOrNull()
                 val confidence = confidenceStr.toIntOrNull()
 
                 if (index != null && confidence != null && index in 1..wordCount) {
-                    results[index - 1] = StringUtils.cleanAnswer(word) to confidence
+                    results[index - 1] = Triple(StringUtils.cleanAnswer(word), confidence, isAlt)
                 }
             }
         }
