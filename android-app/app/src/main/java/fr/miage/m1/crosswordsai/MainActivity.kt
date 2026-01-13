@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationException
 import com.auth0.android.provider.WebAuthProvider
@@ -35,6 +36,7 @@ import fr.miage.m1.crosswordsai.ui.views.CrossedWordsView
 import fr.miage.m1.crosswordsai.ui.views.HomeView
 import fr.miage.m1.crosswordsai.ui.views.PictureView
 import fr.miage.m1.crosswordsai.ui.views.SettingsView
+import fr.miage.m1.crosswordsai.viewmodel.CrosswordViewModel
 import kotlinx.coroutines.launch
 
 /*
@@ -131,6 +133,9 @@ fun CrossWordsAIApp(
 ) {
     // Navigation memory item
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    
+    // ViewModel partagé entre les onglets Camera et Grid
+    val crosswordViewModel: CrosswordViewModel = viewModel()
 
     // Default navigation bar function
     NavigationSuiteScaffold(
@@ -161,8 +166,18 @@ fun CrossWordsAIApp(
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
                 AppDestinations.HOME -> HomeView(Modifier.padding(innerPadding), session.userName)
-                AppDestinations.GRID -> CrossedWordsView(Modifier.padding(innerPadding))
-                AppDestinations.FAVORITES -> PictureView(Modifier.padding(innerPadding))
+                AppDestinations.GRID -> CrossedWordsView(
+                    modifier = Modifier.padding(innerPadding),
+                    viewModel = crosswordViewModel
+                )
+                AppDestinations.FAVORITES -> PictureView(
+                    modifier = Modifier.padding(innerPadding),
+                    viewModel = crosswordViewModel,
+                    onNavigateToGrid = {
+                        // Naviguer automatiquement vers la grille quand elle est prête
+                        currentDestination = AppDestinations.GRID
+                    }
+                )
                 AppDestinations.PROFILE -> SettingsView(
                     modifier = Modifier.padding(innerPadding),
                     isLoggedIn = session.isAuthenticated,

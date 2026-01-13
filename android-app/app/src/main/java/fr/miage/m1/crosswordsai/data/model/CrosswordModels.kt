@@ -4,13 +4,14 @@ import kotlinx.serialization.Serializable
 
 /**
  * Représente les données complètes de la grille de mots croisés en mode plein (rectangulaire)
+ * Compatible avec le format GridResponse du backend
  */
 @Serializable
 data class CrosswordData(
     val height: Int,
     val width: Int,
-    val x: String, // "numbers" ou "letters"
-    val y: String, // "numbers" ou "letters"
+    val x: String = "letters", // "numbers" ou "letters" - valeur par défaut pour compatibilité
+    val y: String = "numbers", // "numbers" ou "letters" - valeur par défaut pour compatibilité
     val blackCells: List<BlackCell> = emptyList(),
     val words: List<WordDefinition> = emptyList()
 )
@@ -26,10 +27,13 @@ data class BlackCell(
 
 /**
  * Représente une définition de mot dans le mode grille complète
+ * Compatible avec WordInfo du backend
  * @param number Le numéro du mot (correspond à la valeur de l'axe : A=1, B=2, etc. pour les lettres, ou numéro direct)
  * @param order L'ordre du mot sur sa ligne/colonne (1er, 2ème, 3ème...)
  * @param size La longueur du mot
  * @param direction La direction du mot : "horizontal" ou "vertical"
+ * @param start Position de début du mot (retournée par le backend)
+ * @param end Position de fin du mot (retournée par le backend)
  */
 @Serializable
 data class WordDefinition(
@@ -37,6 +41,8 @@ data class WordDefinition(
     val order: Int,
     val size: Int,
     val direction: String,
+    val start: Int = 0,  // Ajouté pour compatibilité backend
+    val end: Int = 0,    // Ajouté pour compatibilité backend
     val clue: String = ""  // Définition du mot (récupérée par OCR)
 ) {
     val idKey: String

@@ -8,6 +8,7 @@ import fr.miage.m1.model.WordEntry
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
 
 class CrosswordSolver(private val apiKey: String) {
 
@@ -115,6 +116,7 @@ class CrosswordSolver(private val apiKey: String) {
     /**
      * Appelle un agent IA pour un groupe de mots spécifique.
      * Utilise le StructuredPromptBuilder avec few-shot learning pour améliorer les résultats.
+     * Inclut un timeout de 60 secondes pour éviter les blocages.
      */
     private suspend fun callAgentForGroup(
         agentId: Int,
@@ -139,7 +141,16 @@ class CrosswordSolver(private val apiKey: String) {
             llmModel = GoogleModels.Gemini2_5Flash
         )
 
-        val response = agent.run(userPrompt).trim()
+        // Timeout de 35 secondes par agent pour éviter les blocages
+        val response = withTimeoutOrNull(35_000L) {
+            agent.run(userPrompt).trim()
+        }
+        
+        if (response == null) {
+            println("[AGENT #$agentId] ⚠️ TIMEOUT après 35s - Aucune réponse")
+            return emptyMap()
+        }
+        
         val results = ConstraintBuilder.parseBatchResponse(response, words.size)
 
         val altCount = results.count { it.value.third }
@@ -298,43 +309,44 @@ class CrosswordSolver(private val apiKey: String) {
      * On garde celui qui a la plus haute confiance.
      */
     private fun resolveConflicts(candidates: List<WordCandidate>): Set<WordEntry> {
-        val conflictMap = mutableMapOf<Pair<Int, Int>, MutableList<WordCandidate>>()
         val rejected = mutableSetOf<WordEntry>()
+        val alreadyProcessed = mutableSetOf<Pair<WordEntry, WordEntry>>()
 
-        // 1. Mapper chaque lettre proposée à sa coordonnée (x, y)
-        candidates.forEach { candidate ->
-            candidate.word.coordinates.forEachIndexed { idx, pos ->
-                val char = candidate.answer[idx]
-
-                // On compare avec tous les autres candidats
-                candidates.filter { it != candidate }.forEach { other ->
-                    val otherIdx = other.word.coordinates.indexOf(pos)
-                    // Si l'autre candidat passe par la même case
-                    if (otherIdx >= 0) {
-                        val otherChar = other.answer[otherIdx]
-                        // Et qu'ils ne sont pas d'accord sur la lettre
-                        if (otherChar != char) {
-                            conflictMap.getOrPut(pos) { mutableListOf() }.apply {
-                                add(candidate)
-                                if (!contains(other)) add(other)
-                            }
-                        }
+        // Comparer chaque paire de candidats une seule fois
+        for (i in candidates.indices) {
+            for (j in i + 1 until candidates.size) {
+                val candidateA = candidates[i]
+                val candidateB = candidates[j]
+                
+                // Éviter de traiter la même paire deux fois
+                val pairKey = if (candidateA.word.hashCode() < candidateB.word.hashCode()) {
+                    candidateA.word to candidateB.word
+                } else {
+                    candidateB.word to candidateA.word
+                }
+                if (pairKey in alreadyProcessed) continue
+                alreadyProcessed.add(pairKey)
+                
+                // Vérifier s'il y a un conflit de lettres entre ces deux candidats
+                val hasConflict = candidateA.word.coordinates.withIndex().any { (idxA, posA) ->
+                    val idxB = candidateB.word.coordinates.indexOf(posA)
+                    if (idxB >= 0) {
+                        // Même position - vérifier si les lettres diffèrent
+                        candidateA.answer[idxA] != candidateB.answer[idxB]
+                    } else {
+                        false
                     }
                 }
-            }
-        }
-
-        // 2. Résoudre les conflits par vote de confiance
-        conflictMap.values.forEach { conflictingCandidates ->
-            if (conflictingCandidates.size > 1) {
-                // On trie par confiance décroissante
-                val sorted = conflictingCandidates.sortedByDescending { it.confidence }
-                val winner = sorted.first()
-
-                // Tous les autres sont rejetés
-                sorted.drop(1).forEach { loser ->
-                    rejected.add(loser.word)
-                    println("[CONFLIT] ${loser.answer} rejeté au profit de ${winner.answer} (Conf: ${winner.confidence} vs ${loser.confidence})")
+                
+                if (hasConflict) {
+                    // Conflit détecté - rejeter celui avec la plus faible confiance
+                    if (candidateA.confidence >= candidateB.confidence) {
+                        rejected.add(candidateB.word)
+                        println("[CONFLIT] ${candidateB.answer} rejeté au profit de ${candidateA.answer} (Conf: ${candidateA.confidence}% vs ${candidateB.confidence}%)")
+                    } else {
+                        rejected.add(candidateA.word)
+                        println("[CONFLIT] ${candidateA.answer} rejeté au profit de ${candidateB.answer} (Conf: ${candidateB.confidence}% vs ${candidateA.confidence}%)")
+                    }
                 }
             }
         }

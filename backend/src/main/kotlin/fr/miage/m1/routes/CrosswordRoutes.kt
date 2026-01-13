@@ -26,6 +26,9 @@ fun Route.crosswordRoutes() {
     post("/analyze") {
         var imageFile: File? = null
         try {
+            println("📥 [/analyze] Requête reçue - Analyse de grille en cours...")
+            val startTime = System.currentTimeMillis()
+            
             // 1. Récupération de l'image
             val multipart = call.receiveMultipart()
             multipart.forEachPart { part ->
@@ -50,6 +53,9 @@ fun Route.crosswordRoutes() {
             val grid = withContext(Dispatchers.IO) {
                 gridAnalyzer.analyzeGrid(imageFile)
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            println("✅ [/analyze] Terminé en ${duration}ms - Grille ${grid.width}x${grid.height}, ${grid.words.size} mots détectés")
 
             // 3. Réponse avec la structure (incluant start/end pour ton app mobile)
             call.respond(GridResponse(

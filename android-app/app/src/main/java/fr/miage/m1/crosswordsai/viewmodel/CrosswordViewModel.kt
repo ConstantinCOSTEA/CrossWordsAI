@@ -1,16 +1,39 @@
 package fr.miage.m1.crosswordsai.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import fr.miage.m1.crosswordsai.engine.CrosswordLayoutEngine
+import fr.miage.m1.crosswordsai.data.api.CrosswordApiService
 import fr.miage.m1.crosswordsai.data.model.CrosswordData
 import fr.miage.m1.crosswordsai.data.model.GridCell
+import fr.miage.m1.crosswordsai.data.model.SseEvent
 import fr.miage.m1.crosswordsai.data.model.WordAnswersResponse
+import fr.miage.m1.crosswordsai.engine.CrosswordLayoutEngine
+import fr.miage.m1.crosswordsai.util.ImagePreprocessor
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.io.File
+import java.io.FileOutputStream
+
+/**
+ * États possibles du processus d'analyse
+ */
+sealed class ProcessingState {
+    data object Idle : ProcessingState()
+    data object Preprocessing : ProcessingState()
+    data object Analyzing : ProcessingState()
+    data object Solving : ProcessingState()
+    data class Error(val message: String) : ProcessingState()
+    data object Complete : ProcessingState()
+}
 
 class CrosswordViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -29,7 +52,17 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
     private val _yAxisType = MutableStateFlow("")
     val yAxisType = _yAxisType.asStateFlow()
 
+    private val _processingState = MutableStateFlow<ProcessingState>(ProcessingState.Idle)
+    val processingState = _processingState.asStateFlow()
+
+    private val _solvedCount = MutableStateFlow(0)
+    val solvedCount = _solvedCount.asStateFlow()
+
+    private val _totalCount = MutableStateFlow(0)
+    val totalCount = _totalCount.asStateFlow()
+
     private val engine = CrosswordLayoutEngine()
+    private val apiService = CrosswordApiService.getInstance()
 
     // Instance Json réutilisable
     private val json = Json { ignoreUnknownKeys = true }
@@ -37,69 +70,139 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
     // Garde une référence aux données de la grille
     private var crosswordData: CrosswordData? = null
 
-    init {
-        // Charge la grille
-        loadGrid()
+    // Callback pour naviguer vers la grille
+    private var onGridReady: (() -> Unit)? = null
 
-        //TODO: A remplacer par un appel API
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(2000)
-            loadAnswers()
-        }
+    // Plus de chargement automatique - l'utilisateur doit prendre une photo
+
+    /**
+     * Définit le callback appelé quand la grille est prête
+     */
+    fun setOnGridReadyCallback(callback: () -> Unit) {
+        onGridReady = callback
     }
 
     /**
-     * Charge la structure de la grille depuis le premier JSON
+     * Traite une image de grille de mots croisés
+     * 1. Prétraitement de l'image
+     * 2. Envoi au backend pour analyse
+     * 3. Affichage de la grille
+     * 4. Résolution en streaming
      */
-    private fun loadGrid() {
+    fun processImage(uri: Uri) {
         viewModelScope.launch {
             try {
-                val jsonString = getApplication<Application>().assets
-                    .open("crossword_grid_test.json")
-                    .bufferedReader()
-                    .use { it.readText() }
+                _processingState.value = ProcessingState.Preprocessing
 
-                val data = json.decodeFromString<CrosswordData>(jsonString)
-                crosswordData = data
+                // 1. Prétraitement de l'image
+                val processedFile = withContext(Dispatchers.IO) {
+                    preprocessImage(uri)
+                }
 
-                // Définir les métadonnées de la grille pour l'UI
-                _gridWidth.value = data.width
-                _gridHeight.value = data.height
-                _xAxisType.value = data.x
-                _yAxisType.value = data.y
+                _processingState.value = ProcessingState.Analyzing
 
-                val cells = engine.generateGrid(data)
+                // 2. Envoyer au backend pour analyse
+                val gridData = withContext(Dispatchers.IO) {
+                    apiService.analyzeGrid(processedFile)
+                }
+
+                // 3. Initialiser la grille immédiatement
+                crosswordData = gridData
+                _gridWidth.value = gridData.width
+                _gridHeight.value = gridData.height
+                _xAxisType.value = gridData.x
+                _yAxisType.value = gridData.y
+                _totalCount.value = gridData.words.size
+
+                val cells = engine.generateGrid(gridData)
                 _gridState.value = cells
 
-                println("✅ Grille chargée: ${cells.size} cases")
+                println("✅ Grille analysée: ${gridData.width}x${gridData.height}, ${gridData.words.size} mots")
+
+                // Naviguer vers la grille
+                onGridReady?.invoke()
+
+                _processingState.value = ProcessingState.Solving
+
+                // 4. Lancer la résolution en streaming
+                solveWithStreaming(gridData)
+
+                // Nettoyer le fichier temporaire
+                processedFile.delete()
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                println("❌ Erreur chargement grille: ${e.message}")
+                _processingState.value = ProcessingState.Error("Erreur: ${e.message}")
             }
         }
     }
 
     /**
-     * Charge les réponses depuis le deuxième JSON
+     * Prétraite l'image et la sauvegarde dans un fichier temporaire
      */
-    private fun loadAnswers() {
-        viewModelScope.launch {
-            try {
-                val jsonString = getApplication<Application>().assets
-                    .open("crossword_answers_test.json")
-                    .bufferedReader()
-                    .use { it.readText() }
+    private fun preprocessImage(uri: Uri): File {
+        val context = getApplication<Application>()
+        
+        // Charger le bitmap depuis l'URI
+        val inputStream = context.contentResolver.openInputStream(uri)
+            ?: throw Exception("Impossible de lire l'image")
+        
+        val originalBitmap = BitmapFactory.decodeStream(inputStream)
+        inputStream.close()
 
-                fillWordsFromJson(jsonString)
-                println("✅ Réponses chargées")
+        // Prétraiter l'image
+        val processedBitmap = ImagePreprocessor.preprocess(originalBitmap)
+        originalBitmap.recycle()
 
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println("❌ Erreur chargement réponses: ${e.message}")
+        // Sauvegarder dans un fichier temporaire
+        val outputFile = File(context.cacheDir, "processed_grid_${System.currentTimeMillis()}.png")
+        FileOutputStream(outputFile).use { out ->
+            processedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        processedBitmap.recycle()
+
+        println("✅ Image prétraitée: ${outputFile.absolutePath}")
+        return outputFile
+    }
+
+    /**
+     * Lance la résolution en streaming SSE
+     */
+    private suspend fun solveWithStreaming(gridData: CrosswordData) {
+        try {
+            apiService.solveGridStream(gridData).collect { event ->
+                when (event) {
+                    is SseEvent.Connected -> {
+                        println("🔗 SSE Connecté")
+                    }
+                    is SseEvent.Round -> {
+                        println("📦 Round ${event.event.round}: ${event.event.words.size} mots")
+                        event.event.words.forEach { word ->
+                            fillWord(word.number, word.order, word.direction, word.answer)
+                        }
+                        _solvedCount.value = event.event.solved
+                    }
+                    is SseEvent.Complete -> {
+                        println("✅ Résolution terminée: ${event.event.solved}/${event.event.total}")
+                        event.event.words.forEach { word ->
+                            fillWord(word.number, word.order, word.direction, word.answer)
+                        }
+                        _solvedCount.value = event.event.solved
+                        _processingState.value = ProcessingState.Complete
+                    }
+                    is SseEvent.Error -> {
+                        println("❌ Erreur SSE: ${event.message}")
+                        _processingState.value = ProcessingState.Error(event.message)
+                    }
+                }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _processingState.value = ProcessingState.Error("Erreur streaming: ${e.message}")
         }
     }
+
+
 
     /**
      * Remplit un mot dans la grille avec la réponse fournie
@@ -184,5 +287,18 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun loadAnswersFromBackend(jsonResponse: String) {
         fillWordsFromJson(jsonResponse)
+    }
+
+    /**
+     * Réinitialise l'état pour une nouvelle image
+     */
+    fun reset() {
+        _gridState.value = emptyList()
+        _gridWidth.value = 0
+        _gridHeight.value = 0
+        _processingState.value = ProcessingState.Idle
+        _solvedCount.value = 0
+        _totalCount.value = 0
+        crosswordData = null
     }
 }

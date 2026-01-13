@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fr.miage.m1.crosswordsai.data.model.GridCell
 import fr.miage.m1.crosswordsai.viewmodel.CrosswordViewModel
+import fr.miage.m1.crosswordsai.viewmodel.ProcessingState
 import kotlin.math.roundToInt
 
 @Composable
@@ -51,6 +55,9 @@ fun CrossedWordsView(
     val gridHeight by viewModel.gridHeight.collectAsState()
     val xAxisType by viewModel.xAxisType.collectAsState()
     val yAxisType by viewModel.yAxisType.collectAsState()
+    val processingState by viewModel.processingState.collectAsState()
+    val solvedCount by viewModel.solvedCount.collectAsState()
+    val totalCount by viewModel.totalCount.collectAsState()
 
     CrossedWordsContent(
         cells = cells,
@@ -58,6 +65,9 @@ fun CrossedWordsView(
         gridHeight = gridHeight,
         xAxisType = xAxisType,
         yAxisType = yAxisType,
+        isComplete = processingState is ProcessingState.Complete,
+        solvedCount = solvedCount,
+        totalCount = totalCount,
         modifier = modifier
     )
 }
@@ -69,20 +79,64 @@ fun CrossedWordsContent(
     gridHeight: Int,
     xAxisType: String,
     yAxisType: String,
+    isComplete: Boolean = false,
+    solvedCount: Int = 0,
+    totalCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     if (cells.isNotEmpty() && gridWidth > 0 && gridHeight > 0) {
-        CrossedWordsGrid(
-            cells = cells,
-            gridWidth = gridWidth,
-            gridHeight = gridHeight,
-            xAxisType = xAxisType,
-            yAxisType = yAxisType,
-            modifier = modifier
-        )
+        Column(modifier = modifier.fillMaxSize()) {
+            // Bannière de succès quand résolu
+            if (isComplete) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "🎉 Mot Croisé Résolu ! ($solvedCount/$totalCount)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    )
+                }
+            }
+            
+            CrossedWordsGrid(
+                cells = cells,
+                gridWidth = gridWidth,
+                gridHeight = gridHeight,
+                xAxisType = xAxisType,
+                yAxisType = yAxisType,
+                modifier = Modifier.weight(1f)
+            )
+        }
     } else {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Chargement...", style = MaterialTheme.typography.bodyLarge)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "📷",
+                    style = MaterialTheme.typography.displayLarge
+                )
+                Text(
+                    "Aucune grille chargée",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                Text(
+                    "Allez dans l'onglet Camera pour\nprendre une photo de grille",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

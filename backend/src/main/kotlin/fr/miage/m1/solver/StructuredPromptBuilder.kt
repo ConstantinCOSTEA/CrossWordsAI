@@ -26,13 +26,14 @@ object StructuredPromptBuilder {
         4. Contraintes : Si un pattern est fourni (ex: _ A _ E), tu DOIS le respecter
         5. TYPES DE RÉPONSES ACCEPTÉS : Mots du dictionnaire, noms propres, villes, prénoms, abréviations, tout est valide !
         6. DÉBLOCAGE : Si aucun mot ne correspond avec les contraintes, propose une réponse SANS respecter le pattern et ajoute "ALT" après la confiance
+        7. AUCUNE IDÉE : Si tu n'as vraiment aucune idée, réponds "?" pour passer ce mot
         
         FORMAT DE SORTIE (une ligne par réponse) :
         [ID] MOT CONFIANCE
         ou si tu ignores les contraintes :
         [ID] MOT CONFIANCE ALT
-        
-        CONFIANCE : Un pourcentage de 0 à 100 indiquant ta certitude.
+        ou si tu n'as aucune idée :
+        [ID] ?
         
         ===== EXEMPLES DE RÉSOLUTION =====
         
@@ -64,11 +65,17 @@ object StructuredPromptBuilder {
         Entrée: [7] (5 lettres) : "Animal domestique" | Pattern imposé: C _ I E _
         Sortie: [7] CHIEN 95 ALT
         
+        Exemple 8 - Aucune idée (skip) :
+        Entrée: [8] (7 lettres) : "Définition trop obscure impossible à deviner"
+        Sortie: [8] ?
+        
         ===== FIN DES EXEMPLES =====
         
         IMPORTANT :
-        N'oublie pas que tu dois répondre le plus vite possible et que si tu bloques sur un certain 
-        mot à cause des contraintes tu dois faire comme indiqué à la règle 6. DÉBLOCAGE.
+        - Réponds le plus vite possible
+        - Si tu bloques sur un mot à cause des contraintes, utilise ALT
+        - Si tu n'as vraiment aucune idée, utilise ? pour passer
+        - Ne perds pas de temps sur les mots difficiles, passe avec ? et continue
     """.trimIndent()
 
     /**
