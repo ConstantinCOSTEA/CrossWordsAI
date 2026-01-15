@@ -7,6 +7,8 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import kotlin.math.min
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 /**
  * Prétraitement d'image pour les grilles de mots croisés.
@@ -32,7 +34,7 @@ object ImagePreprocessor {
         val sharpened = applySharpen(grayscale)
         
         // 4. Binarisation (seuil à 200)
-        val binarized = applyThreshold(sharpened, 200)
+        val binarized = applyThreshold(sharpened)
         
         // Nettoyer les bitmaps intermédiaires si différents
         if (resized != bitmap) resized.recycle()
@@ -61,14 +63,14 @@ object ImagePreprocessor {
         val newWidth = (width * scale).toInt()
         val newHeight = (height * scale).toInt()
         
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        return bitmap.scale(newWidth, newHeight)
     }
 
     /**
      * Convertit en niveaux de gris
      */
     private fun toGrayscale(bitmap: Bitmap): Bitmap {
-        val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val result = createBitmap(bitmap.width, bitmap.height)
         val canvas = Canvas(result)
         val paint = Paint()
         
@@ -128,7 +130,7 @@ object ImagePreprocessor {
             result[y * width + width - 1] = pixels[y * width + width - 1]
         }
         
-        val resultBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val resultBitmap = createBitmap(width, height)
         resultBitmap.setPixels(result, 0, width, 0, 0, width, height)
         return resultBitmap
     }
@@ -136,7 +138,9 @@ object ImagePreprocessor {
     /**
      * Applique une binarisation avec un seuil donné
      */
-    private fun applyThreshold(bitmap: Bitmap, threshold: Int): Bitmap {
+    private fun applyThreshold(bitmap: Bitmap): Bitmap {
+        val threshold = 200
+
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
@@ -148,7 +152,7 @@ object ImagePreprocessor {
             pixels[i] = Color.rgb(value, value, value)
         }
         
-        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val result = createBitmap(width, height)
         result.setPixels(pixels, 0, width, 0, 0, width, height)
         return result
     }

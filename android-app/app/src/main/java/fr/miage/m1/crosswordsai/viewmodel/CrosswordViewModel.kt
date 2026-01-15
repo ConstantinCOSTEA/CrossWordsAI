@@ -1,7 +1,6 @@
 package fr.miage.m1.crosswordsai.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -11,7 +10,9 @@ import fr.miage.m1.crosswordsai.data.api.CrosswordApiService
 import fr.miage.m1.crosswordsai.data.model.CrosswordData
 import fr.miage.m1.crosswordsai.data.model.GridCell
 import fr.miage.m1.crosswordsai.data.model.SseEvent
-import fr.miage.m1.crosswordsai.data.model.WordAnswersResponse
+import fr.miage.m1.crosswordsai.data.repository.HistoryRepository
+import fr.miage.m1.crosswordsai.data.repository.SavedCell
+import fr.miage.m1.crosswordsai.data.repository.SavedGridData
 import fr.miage.m1.crosswordsai.engine.CrosswordLayoutEngine
 import fr.miage.m1.crosswordsai.util.ImagePreprocessor
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 
@@ -63,17 +63,13 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val engine = CrosswordLayoutEngine()
     private val apiService = CrosswordApiService.getInstance()
-
-    // Instance Json réutilisable
-    private val json = Json { ignoreUnknownKeys = true }
+    private val historyRepository = HistoryRepository(application)
 
     // Garde une référence aux données de la grille
     private var crosswordData: CrosswordData? = null
 
     // Callback pour naviguer vers la grille
     private var onGridReady: (() -> Unit)? = null
-
-    // Plus de chargement automatique - l'utilisateur doit prendre une photo
 
     /**
      * Définit le callback appelé quand la grille est prête
@@ -189,6 +185,9 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                         _solvedCount.value = event.event.solved
                         _processingState.value = ProcessingState.Complete
+                        
+                        // Sauvegarder automatiquement dans l'historique
+                        saveToHistory()
                     }
                     is SseEvent.Error -> {
                         println("❌ Erreur SSE: ${event.message}")
@@ -202,14 +201,66 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Sauvegarde la grille actuelle dans l'historique
+     */
+    private fun saveToHistory() {
+        val cells = _gridState.value
+        if (cells.isEmpty()) return
 
+        val savedCells = cells.map { cell ->
+            SavedCell(
+                x = cell.x,
+                y = cell.y,
+                char = cell.char,
+                number = cell.number,
+                isEmpty = cell.isEmpty
+            )
+        }
+
+        val savedData = SavedGridData(
+            width = _gridWidth.value,
+            height = _gridHeight.value,
+            cells = savedCells,
+            xAxisType = _xAxisType.value,
+            yAxisType = _yAxisType.value,
+            solvedCount = _solvedCount.value,
+            totalCount = _totalCount.value
+        )
+
+        historyRepository.saveGrid(savedData)
+        println("✅ Grille sauvegardée dans l'historique")
+    }
+
+    /**
+     * Charge une grille depuis l'historique
+     */
+    fun loadFromHistory(savedData: SavedGridData) {
+        _gridWidth.value = savedData.width
+        _gridHeight.value = savedData.height
+        _xAxisType.value = savedData.xAxisType
+        _yAxisType.value = savedData.yAxisType
+        _solvedCount.value = savedData.solvedCount
+        _totalCount.value = savedData.totalCount
+
+        val cells = savedData.cells.map { saved ->
+            GridCell(
+                x = saved.x,
+                y = saved.y,
+                char = saved.char,
+                number = saved.number,
+                isEmpty = saved.isEmpty
+            )
+        }
+
+        _gridState.value = cells
+        _processingState.value = ProcessingState.Complete
+        
+        println("✅ Grille chargée depuis l'historique: ${savedData.width}x${savedData.height}")
+    }
 
     /**
      * Remplit un mot dans la grille avec la réponse fournie
-     * @param number Le numéro du mot
-     * @param order L'ordre du mot sur sa ligne/colonne (1er, 2ème, 3ème...)
-     * @param direction "horizontal" ou "vertical"
-     * @param answer La réponse (ex: "AGNEAU")
      */
     fun fillWord(number: Int, order: Int, direction: String, answer: String) {
         val data = crosswordData ?: run {
@@ -261,32 +312,6 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
 
         _gridState.value = updatedCells
         println("✅ Mot $number (ordre:$order) $direction rempli: $answer")
-    }
-
-    /**
-     * Remplit plusieurs mots à la fois depuis un JSON de réponses
-     */
-    fun fillWordsFromJson(jsonResponse: String) {
-        viewModelScope.launch {
-            try {
-                val response = json.decodeFromString<WordAnswersResponse>(jsonResponse)
-
-                response.words.forEach { wordAnswer ->
-                    fillWord(wordAnswer.number, wordAnswer.order, wordAnswer.direction, wordAnswer.answer)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println("❌ Erreur parsing réponses: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Méthode publique pour charger les réponses depuis un JSON string
-     * (à utiliser quand on reçoit le JSON depuis le backend)
-     */
-    fun loadAnswersFromBackend(jsonResponse: String) {
-        fillWordsFromJson(jsonResponse)
     }
 
     /**
