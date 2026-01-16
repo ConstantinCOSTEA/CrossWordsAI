@@ -4,19 +4,28 @@ import fr.miage.m1.crosswordsai.data.model.CrosswordData
 import fr.miage.m1.crosswordsai.data.model.FinalResultEvent
 import fr.miage.m1.crosswordsai.data.model.RoundResultEvent
 import fr.miage.m1.crosswordsai.data.model.SseEvent
-import fr.miage.m1.crosswordsai.data.model.WordAnswersResponse
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.utils.io.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.ANDROID
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.get
+import io.ktor.client.request.preparePost
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
@@ -67,19 +76,6 @@ class CrosswordApiService(
                 })
             }
         ).body()
-    }
-    
-    /**
-     * Résout une grille de mots croisés
-     * 
-     * @param grid La grille avec les définitions
-     * @return Les réponses pour chaque mot
-     */
-    suspend fun solveGrid(grid: CrosswordData): WordAnswersResponse {
-        return client.post("$baseUrl/solve") {
-            contentType(ContentType.Application.Json)
-            setBody(grid)
-        }.body()
     }
     
     /**
@@ -148,42 +144,13 @@ class CrosswordApiService(
     }
     
     /**
-     * Analyse et résout une grille en une seule requête
-     * 
-     * @param gridImageFile Image de la grille
-     * @param cluesImageFile Image des définitions (optionnel)
-     * @return Les réponses pour chaque mot
-     */
-    suspend fun analyzeAndSolve(
-        gridImageFile: File,
-        cluesImageFile: File? = null
-    ): WordAnswersResponse {
-        return client.submitFormWithBinaryData(
-            url = "$baseUrl/analyze-and-solve",
-            formData = formData {
-                append("grid_image", gridImageFile.readBytes(), Headers.build {
-                    append(HttpHeaders.ContentType, "image/png")
-                    append(HttpHeaders.ContentDisposition, "filename=\"grid.png\"")
-                })
-                
-                cluesImageFile?.let { file ->
-                    append("clues_image", file.readBytes(), Headers.build {
-                        append(HttpHeaders.ContentType, "image/png")
-                        append(HttpHeaders.ContentDisposition, "filename=\"clues.png\"")
-                    })
-                }
-            }
-        ).body()
-    }
-    
-    /**
      * Vérifie si le backend est accessible
      */
     suspend fun healthCheck(): Boolean {
         return try {
             val response: Map<String, String> = client.get("$baseUrl/health").body()
             response["status"] == "UP"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

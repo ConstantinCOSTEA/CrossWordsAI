@@ -15,14 +15,12 @@ android {
 
     defaultConfig {
         applicationId = "fr.miage.m1.crosswordsai"
-        minSdk = 29
+        minSdk = 30
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["auth0Domain"] = "@string/com_auth0_domain"
-        manifestPlaceholders["auth0Scheme"] = "@string/com_auth0_scheme"
     }
 
     buildTypes {
@@ -85,9 +83,6 @@ dependencies {
 
     // Splash View
     implementation(libs.androidx.core.splashscreen)
-
-    // Auth0 SDK
-    implementation(libs.auth0)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

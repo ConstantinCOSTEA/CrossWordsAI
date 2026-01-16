@@ -14,9 +14,17 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,10 +53,12 @@ import fr.miage.m1.crosswordsai.viewmodel.CrosswordViewModel
 import fr.miage.m1.crosswordsai.viewmodel.ProcessingState
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrossedWordsView(
     modifier: Modifier = Modifier,
-    viewModel: CrosswordViewModel = viewModel()
+    viewModel: CrosswordViewModel = viewModel(),
+    onBack: () -> Unit = {}
 ) {
     val cells by viewModel.gridState.collectAsState()
     val gridWidth by viewModel.gridWidth.collectAsState()
@@ -59,17 +69,42 @@ fun CrossedWordsView(
     val solvedCount by viewModel.solvedCount.collectAsState()
     val totalCount by viewModel.totalCount.collectAsState()
 
-    CrossedWordsContent(
-        cells = cells,
-        gridWidth = gridWidth,
-        gridHeight = gridHeight,
-        xAxisType = xAxisType,
-        yAxisType = yAxisType,
-        isComplete = processingState is ProcessingState.Complete,
-        solvedCount = solvedCount,
-        totalCount = totalCount,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Grille",
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Retour"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
         modifier = modifier
-    )
+    ) { paddingValues ->
+        CrossedWordsContent(
+            cells = cells,
+            gridWidth = gridWidth,
+            gridHeight = gridHeight,
+            xAxisType = xAxisType,
+            yAxisType = yAxisType,
+            modifier = Modifier.padding(paddingValues),
+            isComplete = processingState is ProcessingState.Complete,
+            solvedCount = solvedCount,
+            totalCount = totalCount
+        )
+    }
 }
 
 @Composable
@@ -79,10 +114,10 @@ fun CrossedWordsContent(
     gridHeight: Int,
     xAxisType: String,
     yAxisType: String,
+    modifier: Modifier = Modifier,
     isComplete: Boolean = false,
     solvedCount: Int = 0,
-    totalCount: Int = 0,
-    modifier: Modifier = Modifier
+    totalCount: Int = 0
 ) {
     if (cells.isNotEmpty() && gridWidth > 0 && gridHeight > 0) {
         Column(modifier = modifier.fillMaxSize()) {
@@ -96,7 +131,7 @@ fun CrossedWordsContent(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = "🎉 Mot Croisé Résolu ! ($solvedCount/$totalCount)",
+                        text = "🎉 Résolu ! ($solvedCount/$totalCount mots)",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -130,7 +165,7 @@ fun CrossedWordsContent(
                     modifier = Modifier.padding(top = 16.dp)
                 )
                 Text(
-                    "Allez dans l'onglet Camera pour\nprendre une photo de grille",
+                    "Utilisez le bouton Retour pour\nrésoudre une nouvelle grille",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -183,23 +218,17 @@ private fun GridWithConstraints(
     val paddingDp = 16.dp
     val labelSize = 32.dp
 
-    // Calculer la taille de cellule optimale pour que toute la grille soit visible
-    // On laisse de la marge (80%) pour être sûr que tout rentre
     val availableWidth = maxWidth - labelSize - paddingDp * 2
     val availableHeight = maxHeight - labelSize - paddingDp * 2
 
     val maxCellWidth = availableWidth / gridWidth * 0.8f
     val maxCellHeight = availableHeight / gridHeight * 0.8f
 
-    // Prendre la plus petite des deux pour que tout rentre, avec un max de 60dp
     val baseCellSize = minOf(maxCellWidth, maxCellHeight, 60.dp)
 
-    // Calculer la taille initiale de la grille avec labels (en dp)
     val initialGridWidthDp = labelSize + baseCellSize * gridWidth
     val initialGridHeightDp = labelSize + baseCellSize * gridHeight
 
-    // Calculer l'offset pour centrer la grille (en pixels)
-    // On soustrait le padding car il sera ajouté dans le Column
     val initialOffsetX = with(density) {
         ((maxWidth - initialGridWidthDp - paddingDp * 2) / 2).toPx()
     }
@@ -207,7 +236,6 @@ private fun GridWithConstraints(
         ((maxHeight - initialGridHeightDp - paddingDp * 2) / 2).toPx()
     }
 
-    // État pour le zoom et le déplacement
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(initialOffsetX) }
     var offsetY by remember { mutableFloatStateOf(initialOffsetY) }
@@ -223,13 +251,11 @@ private fun GridWithConstraints(
             .fillMaxSize()
             .transformable(state = state)
     ) {
-        // Conteneur avec labels + grille
         Column(
             modifier = Modifier
                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
                 .padding(paddingDp)
         ) {
-            // Labels de l'axe X (en haut)
             XAxisLabels(
                 gridWidth = gridWidth,
                 xAxisType = xAxisType,
@@ -238,9 +264,7 @@ private fun GridWithConstraints(
                 scale = scale
             )
 
-            // Ligne de grille avec labels Y
             Row {
-                // Labels de l'axe Y (à gauche)
                 YAxisLabels(
                     gridHeight = gridHeight,
                     yAxisType = yAxisType,
@@ -249,7 +273,6 @@ private fun GridWithConstraints(
                     scale = scale
                 )
 
-                // La grille
                 GridCanvas(
                     cells = cells,
                     cellSize = baseCellSize * scale,
@@ -272,10 +295,8 @@ private fun XAxisLabels(
     scale: Float
 ) {
     Row {
-        // Espace pour aligner avec la grille
         Box(modifier = Modifier.size(labelSize))
 
-        // Labels X
         for (i in 1..gridWidth) {
             val label = if (xAxisType == "numbers") i.toString() else ('A' + i - 1).toString()
             Box(
@@ -335,7 +356,6 @@ fun GridCanvas(
             val left = cell.x * cellSizePx
             val top = cell.y * cellSizePx
 
-            // Dessine la case (noire si isEmpty, blanche sinon)
             drawRoundRect(
                 color = if (cell.isEmpty) Color.DarkGray else Color.White,
                 topLeft = Offset(left, top),
@@ -343,7 +363,6 @@ fun GridCanvas(
                 cornerRadius = CornerRadius(4.dp.toPx())
             )
 
-            // Bordure
             drawRoundRect(
                 color = Color.DarkGray,
                 topLeft = Offset(left, top),
@@ -352,7 +371,6 @@ fun GridCanvas(
                 style = Stroke(width = 2.dp.toPx())
             )
 
-            // Numéro et lettre (seulement pour les cases blanches)
             if (!cell.isEmpty) {
                 cell.number?.let { num ->
                     val textLayoutResult = textMeasurer.measure(
@@ -373,7 +391,6 @@ fun GridCanvas(
                     )
                 }
 
-                // Lettre de la case
                 cell.char?.let { char ->
                     val textLayoutResult = textMeasurer.measure(
                         text = char.toString(),

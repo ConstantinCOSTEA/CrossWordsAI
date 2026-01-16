@@ -7,6 +7,8 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import kotlin.math.min
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 /**
  * Prétraitement d'image pour les grilles de mots croisés.
@@ -17,7 +19,8 @@ object ImagePreprocessor {
     private const val MAX_DIMENSION = 1500
 
     /**
-     * Prétraitement complet : Redimensionnement + Gris + Netteté + Binarisation
+     * Prétraitement complet : Redimensionnement + Gris + Contraste + Netteté légère
+     * Optimisé pour l'OCR - pas de binarisation brutale
      * @param bitmap L'image source
      * @return L'image prétraitée
      */
@@ -28,18 +31,18 @@ object ImagePreprocessor {
         // 2. Conversion en niveaux de gris
         val grayscale = toGrayscale(resized)
         
-        // 3. Netteté (sharpen)
-        val sharpened = applySharpen(grayscale)
+        // 3. Amélioration du contraste (remplace la binarisation brutale)
+        val enhanced = enhanceContrast(grayscale)
         
-        // 4. Binarisation (seuil à 200)
-        val binarized = applyThreshold(sharpened, 200)
+        // 4. Netteté légère (sharpen)
+        val sharpened = applySharpen(enhanced)
         
         // Nettoyer les bitmaps intermédiaires si différents
         if (resized != bitmap) resized.recycle()
         if (grayscale != resized) grayscale.recycle()
-        if (sharpened != grayscale) sharpened.recycle()
+        if (enhanced != grayscale) enhanced.recycle()
         
-        return binarized
+        return sharpened
     }
 
     /**
@@ -61,14 +64,14 @@ object ImagePreprocessor {
         val newWidth = (width * scale).toInt()
         val newHeight = (height * scale).toInt()
         
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        return bitmap.scale(newWidth, newHeight)
     }
 
     /**
      * Convertit en niveaux de gris
      */
     private fun toGrayscale(bitmap: Bitmap): Bitmap {
-        val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val result = createBitmap(bitmap.width, bitmap.height)
         val canvas = Canvas(result)
         val paint = Paint()
         
@@ -128,27 +131,42 @@ object ImagePreprocessor {
             result[y * width + width - 1] = pixels[y * width + width - 1]
         }
         
-        val resultBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val resultBitmap = createBitmap(width, height)
         resultBitmap.setPixels(result, 0, width, 0, 0, width, height)
         return resultBitmap
     }
 
     /**
-     * Applique une binarisation avec un seuil donné
+     * Améliore le contraste de l'image avec un étirement d'histogramme adaptatif.
+     * Bien meilleur pour l'OCR qu'une binarisation brutale.
      */
-    private fun applyThreshold(bitmap: Bitmap, threshold: Int): Bitmap {
+    private fun enhanceContrast(bitmap: Bitmap): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
         
+        // Trouver les valeurs min et max (ignorer les extrêmes 1%)
+        val values = pixels.map { Color.red(it) }.sorted()
+        val minIdx = (values.size * 0.01).toInt()
+        val maxIdx = (values.size * 0.99).toInt()
+        val minVal = values[minIdx]
+        val maxVal = values[maxIdx]
+        
+        // Éviter la division par zéro
+        val range = (maxVal - minVal).coerceAtLeast(1)
+        
+        // Étirement d'histogramme avec légère augmentation du contraste
         for (i in pixels.indices) {
             val gray = Color.red(pixels[i])
-            val value = if (gray > threshold) 255 else 0
-            pixels[i] = Color.rgb(value, value, value)
+            // Normaliser entre 0 et 255
+            val normalized = ((gray - minVal) * 255 / range).coerceIn(0, 255)
+            // Appliquer une courbe de contraste (gamma léger)
+            val enhanced = (255 * Math.pow(normalized / 255.0, 0.9)).toInt().coerceIn(0, 255)
+            pixels[i] = Color.rgb(enhanced, enhanced, enhanced)
         }
         
-        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val result = createBitmap(width, height)
         result.setPixels(pixels, 0, width, 0, 0, width, height)
         return result
     }

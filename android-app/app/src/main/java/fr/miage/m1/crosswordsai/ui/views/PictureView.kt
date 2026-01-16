@@ -19,16 +19,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,12 +57,13 @@ import com.google.accompanist.permissions.shouldShowRationale
 import fr.miage.m1.crosswordsai.viewmodel.CrosswordViewModel
 import fr.miage.m1.crosswordsai.viewmodel.ProcessingState
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PictureView(
     modifier: Modifier = Modifier,
     viewModel: CrosswordViewModel = viewModel(),
-    onNavigateToGrid: () -> Unit = {}
+    onNavigateToGrid: () -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -74,116 +82,129 @@ fun PictureView(
         }
     }
 
-    when {
-        cameraPermissionState.status.isGranted -> {
-            // Permission accordée - Afficher la caméra ou l'image capturée
-            when {
-                // Affichage de l'état de traitement
-                processingState !is ProcessingState.Idle && processingState !is ProcessingState.Complete -> {
-                    ProcessingStateView(
-                        state = processingState,
-                        modifier = modifier,
-                        onCancel = {
-                            capturedImageUri = null
-                            viewModel.reset()
-                        }
-                    )
-                }
-                // Image capturée - Afficher la prévisualisation
-                capturedImageUri != null -> {
-                    ImagePreviewView(
-                        imageUri = capturedImageUri!!,
-                        modifier = modifier,
-                        onRetake = { capturedImageUri = null },
-                        onValidate = {
-                            viewModel.processImage(capturedImageUri!!)
-                        },
-                        onPickFromGallery = { galleryLauncher.launch("image/*") }
-                    )
-                }
-                // Pas d'image - Afficher la caméra
-                else -> {
-                    Box(modifier = modifier.fillMaxSize()) {
-                        CameraCaptureView(
-                            modifier = Modifier.fillMaxSize(),
-                            onImageCaptured = { uri ->
-                                capturedImageUri = uri
-                                Log.d("PictureView", "Captured Image: $uri")
-                            },
-                            onError = { exception ->
-                                Log.e("PictureView", "Error while capturing image: ${exception.message}")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Capturer une grille",
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Retour"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        modifier = modifier
+    ) { paddingValues ->
+        when {
+            cameraPermissionState.status.isGranted -> {
+                when {
+                    processingState !is ProcessingState.Idle && processingState !is ProcessingState.Complete -> {
+                        ProcessingStateView(
+                            state = processingState,
+                            modifier = Modifier.padding(paddingValues),
+                            onCancel = {
+                                viewModel.reset()
                             }
                         )
-
-                        // Bouton galerie en bas à gauche
-                        OutlinedButton(
-                            onClick = { galleryLauncher.launch("image/*") },
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(start = 32.dp, bottom = 40.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Image,
-                                contentDescription = "Galerie",
-                                modifier = Modifier.size(24.dp)
+                    }
+                    capturedImageUri != null -> {
+                        ImagePreviewView(
+                            imageUri = capturedImageUri!!,
+                            modifier = Modifier.padding(paddingValues),
+                            onRetake = { },
+                            onValidate = {
+                                viewModel.processImage(capturedImageUri!!)
+                            },
+                            onPickFromGallery = { galleryLauncher.launch("image/*") }
+                        )
+                    }
+                    else -> {
+                        Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                            CameraCaptureView(
+                                modifier = Modifier.fillMaxSize(),
+                                onImageCaptured = { uri ->
+                                    Log.d("PictureView", "Captured Image: $uri")
+                                },
+                                onError = { exception ->
+                                    Log.e("PictureView", "Error while capturing image: ${exception.message}")
+                                }
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Galerie")
+
+                            OutlinedButton(
+                                onClick = { galleryLauncher.launch("image/*") },
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(start = 32.dp, bottom = 40.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Image,
+                                    contentDescription = "Galerie",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Galerie")
+                            }
                         }
                     }
                 }
             }
-        }
-        cameraPermissionState.status.shouldShowRationale -> {
-            // L'utilisateur a refusé une fois, montrer une explication
-            Column(
-                modifier = modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    "L'accès à la caméra est nécessaire pour prendre des photos.",
-                    modifier = Modifier.padding(16.dp)
-                )
-                Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                    Text("Demander la permission de la caméra")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
-                    Icon(Icons.Default.Image, "Galerie")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choisir depuis la galerie")
+            cameraPermissionState.status.shouldShowRationale -> {
+                Column(
+                    modifier = Modifier.padding(paddingValues).fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "L'accès à la caméra est nécessaire pour prendre des photos.",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+                        Text("Demander la permission de la caméra")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
+                        Icon(Icons.Default.Image, "Galerie")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choisir depuis la galerie")
+                    }
                 }
             }
-        }
-        else -> {
-            // Permission non demandée ou refusée définitivement
-            Column(
-                modifier = modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    "Veuillez autoriser l'accès à la caméra dans les paramètres de l'application",
-                    modifier = Modifier.padding(16.dp)
-                )
-                Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                    Text("Demander la permission")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
-                    Icon(Icons.Default.Image, "Galerie")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choisir depuis la galerie")
+            else -> {
+                Column(
+                    modifier = Modifier.padding(paddingValues).fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "Veuillez autoriser l'accès à la caméra dans les paramètres de l'application",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+                        Text("Demander la permission")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
+                        Icon(Icons.Default.Image, "Galerie")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choisir depuis la galerie")
+                    }
                 }
             }
         }
     }
 }
 
-/**
- * Vue de prévisualisation de l'image avec boutons de validation
- */
 @Composable
 private fun ImagePreviewView(
     imageUri: Uri,
@@ -215,14 +236,12 @@ private fun ImagePreviewView(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Boutons d'action
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Reprendre
             OutlinedButton(
                 onClick = onRetake,
                 modifier = Modifier.weight(1f)
@@ -234,7 +253,6 @@ private fun ImagePreviewView(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Valider
             Button(
                 onClick = onValidate,
                 modifier = Modifier.weight(1f),
@@ -250,7 +268,6 @@ private fun ImagePreviewView(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Bouton galerie
         OutlinedButton(onClick = onPickFromGallery) {
             Icon(Icons.Default.Image, "Galerie")
             Spacer(modifier = Modifier.width(8.dp))
@@ -261,9 +278,6 @@ private fun ImagePreviewView(
     }
 }
 
-/**
- * Vue affichant l'état du traitement en cours
- */
 @Composable
 private fun ProcessingStateView(
     state: ProcessingState,
