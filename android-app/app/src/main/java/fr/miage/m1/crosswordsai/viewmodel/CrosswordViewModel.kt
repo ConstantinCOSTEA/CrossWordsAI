@@ -147,15 +147,15 @@ class CrosswordViewModel(application: Application) : AndroidViewModel(applicatio
         inputStream.close()
 
         // Prétraiter l'image
-        val processedBitmap = ImagePreprocessor.preprocess(originalBitmap)
-        originalBitmap.recycle()
+        //val processedBitmap = ImagePreprocessor.preprocess(originalBitmap)
+        //originalBitmap.recycle()
 
         // Sauvegarder dans un fichier temporaire
         val outputFile = File(context.cacheDir, "processed_grid_${System.currentTimeMillis()}.png")
         FileOutputStream(outputFile).use { out ->
-            processedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            originalBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
-        processedBitmap.recycle()
+        originalBitmap.recycle()
 
         println("✅ Image prétraitée: ${outputFile.absolutePath}")
         return outputFile

@@ -63,13 +63,31 @@ class GridAnalyzer(
         try {
             // --- 1. OCR & Parsing ---
             val rawText = clueExtractor.extractText(imageFile, ocrApiKey)
+            
+            // DEBUG: Afficher le texte brut de l'OCR
+            println("🔍 [OCR DEBUG] Texte brut extrait (${rawText.length} caractères):")
+            println("------- DÉBUT OCR -------")
+            println(rawText.take(1000)) // Limité à 1000 caractères pour éviter le spam
+            if (rawText.length > 1000) println("... (tronqué)")
+            println("------- FIN OCR -------")
+            
             val parsedClues = parseCluesImproved(rawText)
+            
+            // DEBUG: Afficher les clues détectées
+            println("🔍 [PARSE DEBUG] Indices horizontaux détectés: ${parsedClues.horizontal.keys.sorted()}")
+            println("🔍 [PARSE DEBUG] Indices verticaux détectés: ${parsedClues.vertical.keys.sorted()}")
 
             // Dimensions génériques basées sur les clés détectées
             // Pour les lignes : on prend le max des identifiants horizontaux
             // Pour les colonnes : on prend le max des identifiants verticaux
             val numRows = parsedClues.horizontal.keys.maxOrNull() ?: 1
             val numCols = parsedClues.vertical.keys.maxOrNull() ?: 1
+            
+            // DEBUG: Afficher les dimensions calculées
+            println("🔍 [GRID DEBUG] Dimensions calculées: ${numCols}x${numRows} (cols x rows)")
+            if (numRows == 1 || numCols == 1) {
+                println("⚠️ [WARNING] Grille 1x1 détectée - L'OCR n'a probablement pas trouvé de définitions!")
+            }
 
             // --- 2. Détection Grille ---
             val gridRect = findGridBounds(image)

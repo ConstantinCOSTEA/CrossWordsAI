@@ -47,8 +47,27 @@ fun Route.crosswordRoutes() {
                 return@post
             }
 
+            // ==== DEBUG: Sauvegarde des images pour diagnostic ====
+            val debugDir = File("debug_images")
+            if (!debugDir.exists()) debugDir.mkdirs()
+            
+            val timestamp = System.currentTimeMillis()
+            val originalDebugFile = File(debugDir, "original_$timestamp.png")
+            val preprocessedDebugFile = File(debugDir, "preprocessed_$timestamp.png")
+            
+            // Copie de l'image originale
+            imageFile.copyTo(originalDebugFile, overwrite = true)
+            println("🔍 [DEBUG] Image originale sauvegardée: ${originalDebugFile.absolutePath}")
+            println("🔍 [DEBUG] Taille image originale: ${originalDebugFile.length()} bytes")
+            
             // 2. Traitement (OCR + Analyse structurelle)
             GridAnalyzer.preprocessImage(imageFile)
+            
+            // Copie de l'image prétraitée
+            imageFile.copyTo(preprocessedDebugFile, overwrite = true)
+            println("🔍 [DEBUG] Image prétraitée sauvegardée: ${preprocessedDebugFile.absolutePath}")
+            println("🔍 [DEBUG] Taille image prétraitée: ${preprocessedDebugFile.length()} bytes")
+            // ==== FIN DEBUG ====
 
             val grid = withContext(Dispatchers.IO) {
                 gridAnalyzer.analyzeGrid(imageFile)
